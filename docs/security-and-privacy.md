@@ -1,19 +1,24 @@
-# 安全、身份與隱私
+# Security and Privacy Plan
 
-## 適用原因
+## Risk Context
 
-本專案 concerns：ai, uploads, personal-data。
+The Android-first MVP has no login, payment, database, cloud API, or remote storage. Its main risk is a selected photo that may contain an identifiable person.
 
-## 必須確認
+## Required Protections
 
-- 身份、角色、允許與拒絕邊界，以及敏感操作的可信任執行端。
-- 個資或學生資料的來源、最小蒐集、用途、保存、刪除、去識別與公開展示限制。
-- Secrets 只存在本機忽略檔或部署平台，不進入前端、文件、log 或 Git。
-- 驗收需涵蓋未登入、越權、錯誤輸入與資料外洩情境。
+- Before selection, tell the user to choose only photos they own or are authorized to use.
+- Request only the image-access permission needed for the platform picker flow.
+- Keep image bytes, landmarks, and results in memory for current analysis only.
+- Do not transmit or persist photos, landmarks, or results.
+- Do not commit real test photos, device identifiers, screenshots containing personal data, or private evaluator notes.
+- Do not create an API key or `.env` requirement for the MVP.
 
-## MVP 隱私承諾（規劃）
+## Responsible Product Language
 
-- 初版沒有登入、角色或遠端帳號；主要風險來自可識別人物的上傳照片與公開 Demo 素材。
-- 介面與 Demo 文案須提醒使用者只選擇自己擁有或已取得同意的照片，不上傳他人的未授權肖像。
-- 不將原始影像、完整 landmark 座標或分析結果寫入 repository、console log、截圖資料夾或外部服務。
-- 如果產品從本機單次分析轉為公開網站、雲端處理或儲存結果，必須先完成隱私告知、保存／刪除政策與安全審查；這不是本階段已授權的工作。
+- Use "demonstration range", "in range", "adjustment suggested", and "cannot analyze" rather than medical or safety claims.
+- Explain that image quality, viewpoint, occlusion, clothing, orientation, and landmark confidence can affect the result.
+- Keep feedback wording aligned with the actual angle rule and evidence source.
+
+## Scope-Change Trigger
+
+Cloud upload, result history, sharing, sign-in, telemetry, or public deployment moves the project into a higher-risk state. Before such work, define consent, access control, retention, deletion, incident response, and deployment ownership.

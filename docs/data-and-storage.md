@@ -1,19 +1,21 @@
-# 資料與儲存
+# Data and Storage Boundary
 
-## 適用原因
+## MVP Data Contract
 
-本專案 concerns：ai, uploads, personal-data。
+| Data | Source | Processing | Persistence |
+|---|---|---|---|
+| Selected photo | Authorized phone-gallery JPEG or PNG | In-memory decode, local pose detection, overlay rendering | None |
+| Pose landmarks | Native ML Kit result for current image | In-memory validation and angle calculation | None |
+| Angle and feedback | Pure Dart domain logic | Visible in current result state | None |
+| Demo assets | Team-controlled local photos | Permission review before recording | Do not commit without documented public-use approval |
 
-## 必須確認
+## Rules
 
-- Schema、資料來源、擁有元件、測試資料與 production 資料邊界。
-- Migration、seed、刪除、修復、備份與還原方式；不得用不可回復操作處理學生成果。
-- Upload、媒體或文件的儲存位置、存取權限、容量、保留期與部署持久性。
-- README 與元件文件只記錄安全的資料契約，不放真實資料或 credentials。
+- The MVP has no database, account, analytics pipeline, upload bucket, cache, or result history.
+- Do not write photos, landmark coordinates, or results to logs, test fixtures, screenshots, temporary folders, or Git.
+- `uploads/` and `data/private/` remain ignored as a defensive rule, not as an approved storage design.
+- A feature that saves, shares, uploads, or synchronizes a photo requires new consent, retention, deletion, access-control, and backup design.
 
-## 目前規劃的資料邊界
+## Asset Review
 
-- 影像輸入是使用者從本機選擇的 JPEG 或 PNG；檔案只應存在於當次 Streamlit 程序記憶體，用來產生畫面結果。
-- MVP 不建立資料庫、帳號、歷史紀錄、分析日誌或雲端 object storage；執行結束後不應保留上傳影像。
-- 範例照片放入版本控制前，必須逐張確認肖像／著作權授權與競賽公開條款；否則使用未追蹤的本機檔案，並在 Demo 前以可重現方式準備。
-- 若日後需要保存、分享、收集或雲端傳輸影像，必須先定義保存期限、刪除流程、存取權限與同意文字，並重新評估個資風險。
+For each demo image, record ownership, subject consent, competition permission, and whether public repository or video use is allowed.

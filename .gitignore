@@ -19,6 +19,9 @@ quotations/
 # Dependencies, build, and local tools
 node_modules/
 .dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
 .venv/
 venv/
 __pycache__/
@@ -30,6 +33,7 @@ build/
 coverage/
 .DS_Store
 *.log
+*.iml
 
 # Local image inputs and non-public evaluation data
 uploads/

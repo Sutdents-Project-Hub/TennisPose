@@ -1,20 +1,21 @@
-<!-- PR title：<type>(<scope>): <繁體中文描述>；type／scope 維持英文，描述使用繁體中文。 -->
+<!-- PR title: <type>(<scope>): <English summary> -->
 
-## 目的
+## Purpose
 
-說明這次變更要解決的問題與可觀察結果。
+Describe the user or project problem this change addresses and the observable outcome.
 
-## 變更範圍
+## Scope
 
-- （請填寫）
+- (Describe the included and excluded work.)
 
-## 驗證
+## Verification
 
-- [ ] 已列出實際執行的 lint、typecheck、test、build 或人工驗收
-- [ ] README、元件 README、`docs/` 與環境變數範例已同步或不需更新
-- [ ] 未包含秘密、`.env`、憑證、個資、內部／合約／商業文件
+- [ ] I listed the commands and manual checks that actually ran.
+- [ ] README, component documentation, and affected `docs/` are synchronized, or I explained why no documentation change was needed.
+- [ ] I tested applicable failure states as well as the primary user flow.
+- [ ] This change contains no secrets, `.env` values, private images, personal data, contracts, or confidential business material.
 
-## 風險與部署
+## Risks and Follow-up
 
-- 資料、權限、相容性、遷移、部署與回滾影響：
-- 尚未驗證或需要人工確認：
+- Data, privacy, compatibility, attribution, deployment, or rollback impact:
+- Unverified assumptions or decisions requiring review:

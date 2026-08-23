@@ -1,51 +1,49 @@
-# 專案範圍與驗收
+# Product Requirements and Acceptance
 
-## 專案摘要
+## User Problem
 
-以單張側拍照片分析網球發球獎盃姿勢的手肘角度，提供可在競賽展示中清楚說明的紅綠燈回饋。
+A learner may have a serve photo but no immediate way to understand one key Trophy Pose arm angle. TennisPose turns one authorized photo into a transparent visual result rather than a black-box score.
 
-## 本階段目標
+## Target User
 
-- 階段：競賽／展示
-- 使用對象：缺少即時教練回饋、正在練習網球發球的新手或學生。
-- 核心問題：使用者難以僅靠單張照片判斷發球獎盃姿勢的手肘是否過度彎曲或伸展。
-- 可觀察成果：上傳一張可辨識的側拍照片後，畫面能顯示骨架、肩—肘—腕連線、量測角度與「示範區間內／需調整」結果。
+The primary user is a tennis learner or student with an Android phone and a clear side-view Trophy Pose photo. The app supports practice reflection and a competition demonstration; it is not for clinical, rehabilitation, or professional biomechanical assessment.
 
-## 範圍
+## Primary User Story
 
-- 單張網球發球獎盃姿勢照片的本機上傳與預覽
-- 以人體關鍵點計算肩膀、手肘、手腕三點夾角
-- 依可配置目標區間顯示紅綠燈與可理解的姿勢回饋
-- 正確與錯誤示例的可重現競賽 Demo 流程
-- 每一項功能需有可展示或可測試的完成條件。
+As a learner, I can select an authorized Trophy Pose photo from my phone, choose the arm I want to inspect, and see the shoulder-elbow-wrist overlay and angle so I understand the feedback.
 
-## 非本階段範圍
+## Functional Requirements
 
-- MVP 僅涵蓋網球發球獎盃姿勢（Trophy Pose），不分析完整揮拍流程。
-- MVP 僅分析單張定格照片，不提供即時視訊追蹤、錄影串流或鏡頭同步。
-- 介面預定以 Streamlit 實作，避免額外自訂前端框架與複雜互動。
-- 目標是約 10 至 15 小時可展示的競賽原型；功能、依賴與測試需維持最小範圍。
-- 角度門檻是競賽展示假設，未經教練或醫療專業驗證前不可宣稱可預防傷害或作醫療診斷。
-- 未確認的帳號、付款、個資、正式營運、production 資料與外部服務不因構想而自動納入。
-- 未被真實需求使用的元件、共用套件與基礎設施不先建立。
+| ID | Requirement | MVP acceptance condition |
+|---|---|---|
+| FR-01 | Select a photo | The app opens the phone picker, accepts a JPEG or PNG, and handles cancel or denial safely. |
+| FR-02 | Select arm side | The user can choose left or right before analysis. |
+| FR-03 | Detect pose | The on-device adapter returns selected-side landmarks or a typed cannot-analyze state. |
+| FR-04 | Measure angle | The app calculates the elbow angle from shoulder-elbow and wrist-elbow vectors. |
+| FR-05 | Render evidence | The image shows relevant points, arm segments, and numeric angle. |
+| FR-06 | Explain result | The app labels a demonstration range and shows neutral in-range or adjustment feedback. |
+| FR-07 | Fail safely | Missing image, cancelled selection, unsupported input, missing landmarks, and invalid geometry never create a score. |
 
-## 驗收方式
+## Non-Functional Requirements
 
-- 以 [極限 MVP 實作與驗收計畫](mvp-plan.md) 的逐項驗收條件進行。
-- 最少準備一張團隊有權使用的「示範區間內」照片與一張「需調整」照片；兩張均需能被姿勢模型辨識。
-- 驗收時需示範可讀取的影像結果、無法辨識姿勢時的友善提示，以及不把影像寫入本機專案或雲端的行為。
-- 未來若調整角度門檻或量測肢側，必須同步更新本文件、`docs/architecture.md`、`docs/competition.md` 及測試證據。
+- Analysis runs on-device without an account, database, API key, or internet dependency.
+- The Android app is demonstrable on a physical device.
+- Raw photos, landmarks, and results are not persisted after the current analysis.
+- The complete flow is understandable in a two-minute competition video.
+- All visible app copy, source comments, documentation, and repository artifacts use English.
 
-## 未決定事項
+## Out of Scope
 
-- 正式競賽名稱、2026 年報名規則、影片長度與送件截止日尚未核實。
-- 角度區間、拍攝視角與左右手姿勢的判斷規則需由網球教練或可信來源確認後才可作為評分標準。
-- 影像保存期限、隱私告知方式與日後公開部署需求尚未決定。
-- 專案授權條款、第三方模型與素材的最終歸屬清單尚未決定。
+- Live camera, video, tracking, ball detection, full-swing scoring, or history.
+- Native iOS delivery before Android acceptance.
+- Sharing, social features, subscriptions, dashboards, or server-side features.
+- Injury or medical claims.
 
-## 假設
+## Acceptance Evidence
 
-- 初版在使用者本機執行，影像只用於當次分析且不建立帳號、雲端儲存或資料庫。
-- Demo 影像由團隊自行拍攝或使用已獲公開與競賽使用授權的素材。
-- 姿勢關鍵點將由 MediaPipe Pose 等本機套件提供；實作前需確認版本相容性、授權與歸屬要求。
-- 使用者已明確授權在 main 建立初始化 commit、設定指定 origin 並推送；這不包含部署或建立外部服務。
+1. Flutter application boots on a physical Android device.
+2. Dart tests cover right, acute, obtuse, and invalid angle inputs.
+3. One authorized photo reaches the configured in-range result.
+4. One authorized photo reaches the configured adjustment result.
+5. One unreliable input reaches a clear cannot-analyze state.
+6. Overlay, limitations, demo script, attribution, and behavior agree.

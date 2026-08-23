@@ -1,36 +1,37 @@
-# 競賽與展示準備
+# Competition Demo and Submission Plan
 
-## 問題與使用對象
+## Target
 
-以單張側拍照片分析網球發球獎盃姿勢的手肘角度，提供可在競賽展示中清楚說明的紅綠燈回饋。
+The expected target is the Congressional App Challenge or another confirmed student-app competition. This repository does not verify current eligibility, deadline, submission fields, video duration, repository visibility, or platform requirements. Confirm them from the organizer's official source before submitting.
 
-- 目標使用者是缺少即時教練回饋的網球初學者或學生。
-- 故事線：私人教練回饋不一定隨手可得；使用者可用一張自己的側拍照片理解幾何角度與示範區間的關係，再決定是否尋求教練協助。
-- 不把紅綠燈表達為受傷診斷、治療建議或「保證正確」的姿勢結論。
+## Demo Narrative
 
-## 展示流程
+Tennis learners may not have instant coaching feedback. TennisPose gives a transparent first look at one Trophy Pose photo: it shows the relevant arm landmarks, calculates an elbow angle locally on the phone, and explains the displayed result.
 
-1. 以 15–20 秒說明問題、單一動作範圍與「照片而非即時影片」的 MVP 取捨。
-2. 上傳團隊有權使用的「需調整」側拍照，顯示骨架、肘角、紅色回饋與可理解的重新拍攝／調整提示。
-3. 上傳「示範區間內」側拍照，顯示相同計算流程與綠色回饋。
-4. 用 15–20 秒解釋 `shoulder → elbow → wrist` 三點夾角，將程式邏輯連結到輸出結果。
-5. 結尾說明限制：單張 2D 影像、視角與關鍵點誤差、未經專家驗證的門檻，以及不取代教練或醫療專業。
+The claim is limited to visualizing a photo-based demonstration range. The app does not diagnose injury, certify a serve, or replace a coach.
 
-失敗備案：預先準備同樣來源的清晰照片；若姿勢偵測仍不可用，只展示已事先錄製且明確標為「錄製示範」的畫面，不將其說成現場結果。
+## Two-Minute Mobile Demo
 
-展示內容只使用團隊自製、去識別或取得公開展示授權的測試資料。
+| Time | Content |
+|---:|---|
+| 0:00-0:20 | Learner problem, Android-first decision, and single-photo boundary. |
+| 0:20-0:50 | Select an authorized adjustment-case photo and show overlay, angle, and red feedback. |
+| 0:50-1:20 | Select an authorized in-range photo and show the same local calculation with green feedback. |
+| 1:20-1:40 | Explain shoulder-elbow-wrist geometry and on-device processing. |
+| 1:40-2:00 | State privacy handling, limits, and the role of a coach for meaningful advice. |
 
-## 證據與來源
+## Evidence and Asset Rules
 
-- 記錄資料集、研究、開放資料、模型、API、圖片、字型與第三方程式碼的來源及授權。
-- AI 產生內容需說明限制、錯誤可能性與不可取代的人工判斷。
+- Use only team-created photos or assets with documented permission for competition and public demonstration.
+- Record package, native SDK, bridge, image, icon, font, and code attribution before submission.
+- Do not include private images, personal data, secrets, contracts, or unlicensed media in the repository or recording.
+- A recorded fallback is allowed only when clearly labelled as recorded evidence, not represented as a live run.
 
-## 已知限制
+## Submission Checklist
 
-- 區分可運作原型、模擬資料、尚未完成能力與未驗證假設，不誇大正式營運或醫療／安全效果。
-
-## 提交前檢查
-
-- 正式競賽名稱、規則、檔案格式、截止時間、公開權限、影片／簡報連結與 repository 可見性已逐項核實；目前均仍待確認。
-- README、demo、程式碼、環境變數範例與實際版本一致。
-- 秘密、個資、內部文件與不可再散布素材已排除。
+- [ ] Official rules, deadline, format, repository visibility, and platform expectations have been verified.
+- [ ] The real-device recording matches the current code and documented scope.
+- [ ] Green, red, cancellation/permission, and cannot-analyze paths are demonstrated.
+- [ ] Flutter, ML Kit, bridge packages, and assets have complete attribution and license review.
+- [ ] Documentation contains no unsupported accuracy, injury, medical, or competition-compliance claim.
+- [ ] No secrets, private photos, personal data, contracts, or confidential documents are included.

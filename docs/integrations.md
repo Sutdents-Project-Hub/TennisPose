@@ -1,18 +1,29 @@
-# 外部整合與 AI
+# AI, Native Bridge, and Dependency Plan
 
-## 適用原因
+## Native Pose Strategy
 
-本專案 concerns：ai, uploads, personal-data。
+The selected direction is Flutter plus the official Google ML Kit Pose Detection SDK on Android and iOS. The product only needs a still photo, so the adapter must expose ML Kit static-image mode rather than a video-tracking flow.
 
-## 必須確認
+The official native SDK is documented as beta. The project must prove the final SDK version, Flutter bridge, permissions, image conversion, and result mapping on a real Android device before treating the integration as ready.
 
-- API、模型或服務的官方來源、授權、成本、rate limit、timeout、錯誤與替代流程。
-- Key 與敏感請求由可信任環境管理；不得將 production secret 放入 App 或公開 Web。
-- AI 功能需記錄模型用途、輸入資料、限制、錯誤可能性、人工覆核與競賽揭露方式。
-- 外部服務失效、回傳不完整或不可用時，demo 與主要流程應有可理解的降級行為。
+## Planned Dependency Categories
 
-## MVP 技術計畫
+| Category | Intended role | Current status |
+|---|---|---|
+| Flutter SDK | Native app framework and Dart runtime | Not verified in this repository |
+| Gallery picker package | Local image selection | Candidate not selected |
+| ML Kit bridge | Flutter-to-native pose detector adapter | Candidate not selected; device spike required |
+| Flutter rendering | `CustomPainter` image overlay | Framework capability planned |
+| Test and lint tooling | `flutter test` and `flutter analyze` | Planned; commands not verified |
 
-- 預定使用 `MediaPipe Pose` 做本機人體關鍵點推論，使用 `OpenCV` 做影像讀取／繪製，以及 `NumPy` 做幾何運算；實際套件版本、Python 相容性與授權尚未驗證。
-- 此版本不規劃呼叫雲端 AI、LLM、教練資料庫或第三方 API，因此不應設定 API key，也不需要 `.env`。
-- 實作完成後需記錄每個實際依賴的來源、版本範圍、授權和可重現安裝方式；若競賽規則要求，將模型／套件 attribution 放入 README 或提交資料。
+## Bridge Selection Rule
+
+Prefer a maintained Flutter bridge that exposes static-image landmarks, confidence data, Android/iOS configuration, and a compatible license. Validate it with the Android device spike before product UI work. If no bridge satisfies that contract, use a minimal, documented platform channel to the official ML Kit SDK rather than changing the product to a cloud service.
+
+## Official References to Verify During Bootstrap
+
+- Flutter mobile application setup: https://docs.flutter.dev/
+- ML Kit Pose Detection for Android: https://developers.google.com/ml-kit/vision/pose-detection/android
+- ML Kit Pose Detection for iOS: https://developers.google.com/ml-kit/vision/pose-detection/ios
+
+No LLM, remote computer-vision API, analytics SDK, identity provider, payment service, or API key is in scope. Adding any of these changes privacy, cost, reliability, and competition disclosure requirements.
