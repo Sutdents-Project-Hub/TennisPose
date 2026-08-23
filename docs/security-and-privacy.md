@@ -1,4 +1,4 @@
-# Security and Privacy Plan
+# Security and Privacy Boundary
 
 ## Risk Context
 
@@ -6,10 +6,10 @@ The Android-first MVP has no login, payment, database, cloud API, or remote stor
 
 ## Required Protections
 
-- Before selection, tell the user to choose only photos they own or are authorized to use.
-- Request only the image-access permission needed for the platform picker flow.
-- Keep image bytes, landmarks, and results in memory for current analysis only.
-- Do not transmit or persist photos, landmarks, or results.
+- The app explains local processing before selection; competition operators must use only photos they own or are authorized to use.
+- The implementation uses the platform gallery picker and configures the iOS photo-library purpose string. Android uses the current system picker flow without a broad storage permission.
+- Keep decoded image data, landmarks, and results in memory for the current analysis only. The selected source image remains under the platform picker and device file lifecycle.
+- Do not transmit photos, landmarks, or results, and do not create app-controlled analysis history.
 - Do not commit real test photos, device identifiers, screenshots containing personal data, or private evaluator notes.
 - Do not create an API key or `.env` requirement for the MVP.
 

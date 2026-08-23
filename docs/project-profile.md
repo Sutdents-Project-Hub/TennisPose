@@ -10,7 +10,7 @@
 | Primary platform | Android physical device |
 | Follow-up platform | iOS after Android validation |
 | Framework | Flutter and Dart |
-| Bootstrap status | Documentation scaffold only |
+| Bootstrap status | Executable Flutter MVP |
 | Deployment | Not planned |
 
 ## Product Statement
@@ -21,7 +21,7 @@ TennisPose lets a learner inspect one Trophy Pose photo on a mobile device. The 
 
 Flutter is selected instead of the default React Native with Expo because the project needs a genuine installed app, a custom image overlay, Android-first device testing, and an on-device pose boundary without a Python or cloud backend.
 
-The plan uses the official ML Kit native pose SDK behind a Flutter adapter. The adapter implementation and final package versions are not selected or verified yet.
+The app uses Google ML Kit's native pose SDK through `google_mlkit_pose_detection` 0.15.0. The bridge runs accurate single-image detection through platform channels and returns landmarks to pure Dart domain logic.
 
 ## Constraints
 
@@ -31,8 +31,15 @@ The plan uses the official ML Kit native pose SDK behind a Flutter adapter. The 
 - No medical, injury-prevention, rehabilitation, or professional coaching claim.
 - Native Android-first MVP target: 16 to 20 hours.
 
+## Verified Technical Baseline
+
+- Flutter 3.41.9 and Dart 3.11.5.
+- Android minSdk 23 and a successful Android debug APK build.
+- Android 36 emulator launch, layout inspection, system picker launch, and cancellation handling.
+- iOS 15.5 configuration and a successful iOS simulator debug build, with ML Kit simulator architecture warnings.
+
 ## Open Decisions
 
-- Flutter and Dart versions, native SDK versions, bridge strategy, and platform permissions.
-- Final angle range, source, viewpoint, and feedback wording.
+- Coach validation or replacement of the configurable 90-105 degree demonstration range.
+- Physical Android verification with authorized in-range, adjustment, and unsuitable photos.
 - Current competition requirements, asset policy, attribution, and project license.

@@ -1,56 +1,53 @@
 # Flutter Mobile Application
 
-## Responsibility
+`app/` is the complete Flutter project root for TennisPose. It contains the shared Dart application, Android and iOS platform projects, tests, gallery selection, on-device pose integration, angle logic, and result overlay.
 
-`app/` will be the complete Flutter project root. It will contain the manifest, Dart source, tests, generated Android and iOS directories, gallery-selection integration, on-device pose bridge, geometry, and overlay UI.
-
-There is no backend or server component. Android is the first acceptance target; iOS is evaluated only after the shared Flutter code works on Android.
-
-## Required Bootstrap Evidence
-
-The future executable skeleton must be created directly in `app/` with Flutter's official initializer. It must contain:
-
-- `app/pubspec.yaml` and `app/pubspec.lock`
-- `app/lib/main.dart`
-- `app/test/`
-- generated `app/android/` and `app/ios/`
-- no nested `.git/`
-
-None of this evidence exists yet. Do not create `app/TennisPose/` or `app/flutter/` wrappers.
-
-Flutter's official application template also generates `app/README.md`. During bootstrap, reconcile that generated file with this component contract in the same task; do not discard the documented architecture, safety, or verification boundary just to retain template text.
-
-## Planned Module Boundaries
+## Module Boundaries
 
 ```text
 lib/
   main.dart
   features/pose_analysis/
+    data/
+      ml_kit_pose_analyzer.dart
+    domain/
+      pose_analysis.dart
     presentation/
       pose_analysis_page.dart
       result_overlay_painter.dart
-    domain/
-      angle_calculator.dart
-      analysis_result.dart
-      feedback_rule.dart
-    data/
-      gallery_image_source.dart
-      native_pose_detector_adapter.dart
 ```
 
-- `presentation/` owns widgets, loading/error states, and `CustomPainter`.
-- `domain/` is pure Dart and owns no permissions, images, or platform channels.
-- `data/` owns gallery and native ML Kit adapter boundaries; it returns typed data or recoverable failures.
+- `presentation/` owns UI state, gallery interaction, error messages, and painting.
+- `domain/` owns plugin-free points, angle geometry, result types, and the feedback rule.
+- `data/` maps native ML Kit poses into validated domain landmarks.
 
-## Android Device Spike
+## Commands
 
-Before building product screens, verify on a real Android phone that a Flutter development build installs, gallery selection safely handles cancellation, the chosen bridge returns landmarks for one clear photo, invalid landmarks yield a controlled failure, and package licenses and permissions are recorded.
+```bash
+flutter pub get
+flutter run
+flutter analyze
+flutter test
+flutter build apk --debug
+```
 
-## Planned Quality Gates
+The primary acceptance target is an Android physical device. An iOS simulator debug build is available through:
 
-- `flutter analyze`
-- `flutter test`
-- Android debug build
-- Manual Android test for in-range, adjustment, and cannot-analyze results
+```bash
+flutter build ios --simulator --debug --no-codesign
+```
 
-Record a command and result only after it has actually run. See [the roadmap](../docs/mvp-plan.md).
+## Platform Configuration
+
+- Android application ID: `com.studentsprojecthub.tennispose`
+- Android minSdk: 23
+- iOS deployment target: 15.5
+- iOS photo-library usage description: configured in `ios/Runner/Info.plist`
+- Release signing: intentionally not configured
+- Environment variables: none
+
+## Verified State
+
+On August 23, 2026, static analysis passed with no issues, all 8 tests passed, the Android debug APK built, the app launched on an Android 36 emulator, and the system picker cancellation flow returned safely. The iOS simulator debug target also compiled, with native ML Kit architecture warnings.
+
+Physical Android pose detection with authorized photos remains the final device acceptance gate. Do not describe the app as medically validated or professionally calibrated.

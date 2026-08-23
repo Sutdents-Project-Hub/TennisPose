@@ -41,9 +41,9 @@ As a learner, I can select an authorized Trophy Pose photo from my phone, choose
 
 ## Acceptance Evidence
 
-1. Flutter application boots on a physical Android device.
-2. Dart tests cover right, acute, obtuse, and invalid angle inputs.
-3. One authorized photo reaches the configured in-range result.
-4. One authorized photo reaches the configured adjustment result.
-5. One unreliable input reaches a clear cannot-analyze state.
-6. Overlay, limitations, demo script, attribution, and behavior agree.
+1. **Verified on emulator:** Flutter application boots and opens the Android system photo picker.
+2. **Verified by tests:** Dart tests cover right, straight, invalid, confidence, and feedback-boundary inputs.
+3. **Pending physical device:** One authorized photo reaches the configured in-range result.
+4. **Pending physical device:** One authorized photo reaches the configured adjustment result.
+5. **Pending physical device:** One unreliable input reaches a clear cannot-analyze state.
+6. **Pending submission review:** Overlay, limitations, demo script, attribution, and behavior agree.

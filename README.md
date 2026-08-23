@@ -1,91 +1,100 @@
 # TennisPose - AI Tennis Trophy Pose Coach
 
-> Stage: competition MVP | Product: native mobile app | Primary platform: Android | Deployment: not planned
+> Stage: competition MVP | Product: native mobile app | Primary platform: Android | Deployment: none
 
-## Product
+TennisPose analyzes one tennis serve Trophy Pose photo on-device. The user selects a side-view image, chooses the left or right arm, and receives an annotated elbow angle with explainable green or red feedback.
 
-TennisPose is a Flutter mobile app that analyzes one tennis serve Trophy Pose photo. A user selects a side-view image from a phone, chooses an arm to inspect, and receives an annotated elbow-angle result with explainable red or green feedback.
+It is deliberately a single-photo learning aid. It is not a live-video coach, full-swing tracker, injury-prevention system, or medical product.
 
-It is deliberately a single-photo coaching aid, not a live-video coach, full-swing tracker, injury-prevention system, or medical product.
+## Implemented MVP
 
-## Technology Decision
+- Android and iOS Flutter project generated directly in `app/` with no nested repository.
+- Android system photo picker with cancellation and readable failure handling.
+- Left/right arm selection.
+- Static-image pose detection through Google ML Kit's native SDK and a Flutter platform-channel adapter.
+- Shoulder, elbow, and wrist confidence validation before any score is shown.
+- Pure Dart elbow-angle geometry and a configurable 90-105 degree demonstration rule.
+- `CustomPainter` overlay with landmarks, arm segments, angle label, and green/red status.
+- Focused idle, selected, analyzing, analyzed, and cannot-analyze states.
+- No account, backend, database, cloud upload, remote AI, API key, or saved history.
 
-The app will use **Flutter and Dart** rather than Streamlit or React Native. Flutter delivers a genuine Android and iOS application from one codebase. The MVP is Android-first: gallery selection, on-device pose detection, overlay rendering, and the real-device demo must work on Android before iOS work begins.
+## Technology
 
-Pose landmarks will come from the official Google ML Kit Pose Detection SDK through a Flutter adapter. Static-image detection is a direct match for this product, but the native SDK is beta. The bridge, device configuration, and final package versions remain unverified until a physical-device spike passes.
+| Responsibility | Implementation |
+|---|---|
+| App framework | Flutter 3.41.9 and Dart 3.11.5 |
+| Gallery selection | `image_picker` 1.2.3 |
+| Pose landmarks | `google_mlkit_pose_detection` 0.15.0 in accurate, single-image mode |
+| Angle math | Pure Dart vectors, dot product, and trigonometry |
+| Overlay | Flutter `CustomPainter` |
+| Android baseline | minSdk 23; app ID `com.studentsprojecthub.tennispose` |
+| iOS baseline | iOS 15.5; photo-library purpose string configured |
 
-## MVP User Flow
+The Flutter package is a community bridge to the native Google ML Kit SDK, not an official Google Flutter plugin. The native pose API is processed locally and remains subject to the SDK and bridge limitations documented in [integrations](docs/integrations.md).
 
-1. Read a short privacy and photo-permission notice.
-2. Select one authorized JPEG or PNG from the phone gallery.
-3. Choose the left or right arm to inspect.
-4. Run on-device pose detection and validate shoulder, elbow, and wrist landmarks.
-5. Draw arm segments and elbow angle over a copy of the photo.
-6. Show an in-range, adjustment-suggested, or cannot-analyze result.
+## Run Locally
 
-## Scope
+Prerequisites: Flutter 3.41.9 or a compatible stable release, Dart 3.11.5 or compatible, and an Android SDK/toolchain.
 
-### Included
+```bash
+cd app
+flutter pub get
+flutter run
+```
 
-- One still gallery image, one Trophy Pose, and one selected arm side.
-- On-device pose landmarks and pure Dart elbow-angle geometry.
-- Annotated result image, transparent feedback, and safe failure states.
+Choose an Android device for the primary MVP flow. Use only a photo you own or are authorized to analyze.
 
-### Excluded
+## Verify
 
-- Live camera, video, tracking, ball detection, full-swing analysis, or history.
-- Accounts, database, cloud storage, sharing, payment, or a custom backend.
-- Remote AI, API keys, medical claims, or app-store release in this MVP.
+```bash
+cd app
+flutter analyze
+flutter test
+flutter build apk --debug
+flutter build ios --simulator --debug --no-codesign
+```
 
-## Planned Technology
+Verified on August 23, 2026:
 
-| Responsibility | Planned choice | Status |
-|---|---|---|
-| Native UI | Flutter and Dart | Planned; no Flutter project exists yet |
-| Image selection | Flutter gallery picker | Candidate; package and permissions unverified |
-| Pose landmarks | Official ML Kit SDK through a Flutter adapter | Planned; bridge unverified |
-| Angle math | Pure Dart vectors and trigonometry | Planned |
-| Overlay | Flutter `CustomPainter` | Planned |
-| Quality checks | `flutter analyze` and `flutter test` | Planned; not yet available |
+- `flutter analyze`: no issues.
+- `flutter test`: 8 tests passed.
+- Android debug APK: built at `app/build/app/outputs/flutter-apk/app-debug.apk`.
+- Android 36 emulator: app launched, layout inspected, system photo picker opened, and cancellation returned a safe message.
+- iOS simulator debug build: compiled successfully. ML Kit reported simulator architecture warnings, so iOS runtime behavior is not accepted yet.
 
-## Planned Layout
+Still required for competition acceptance: run pose detection with authorized in-range, adjustment, and unsuitable photos on a physical Android device and record the results. An emulator-only run is not treated as physical-device evidence.
+
+## Repository Layout
 
 ```text
 app/
-  pubspec.yaml
+  android/
+  ios/
   lib/
     main.dart
     features/pose_analysis/
-      presentation/
-      domain/
       data/
+      domain/
+      presentation/
   test/
-  android/
-  ios/
+  pubspec.yaml
+  pubspec.lock
 docs/
 ```
-
-Only `app/README.md` and documentation exist today. No Flutter manifest, Dart code, device build, or dependency has been created.
-
-## Delivery Plan
-
-The Android-first native MVP is planned for **16 to 20 hours**. This is longer than the earlier web plan because it includes Flutter bootstrap, native permissions, the pose bridge, and physical-device verification.
-
-See [the roadmap and test plan](docs/mvp-plan.md), [the architecture](docs/architecture.md), and [the competition plan](docs/competition.md).
 
 ## Documentation
 
 - [Project profile](docs/project-profile.md)
 - [Product requirements](docs/project-overview.md)
 - [Solution architecture](docs/architecture.md)
-- [MVP roadmap and test plan](docs/mvp-plan.md)
+- [MVP roadmap and test evidence](docs/mvp-plan.md)
 - [Competition plan](docs/competition.md)
 - [Data and storage boundary](docs/data-and-storage.md)
-- [AI, native bridge, and dependency plan](docs/integrations.md)
-- [Security and privacy plan](docs/security-and-privacy.md)
-- [Mobile app component contract](app/README.md)
+- [Native bridge and dependency notes](docs/integrations.md)
+- [Security and privacy](docs/security-and-privacy.md)
+- [Mobile app component guide](app/README.md)
 - [Repository working rules](AGENTS.md)
 
 ## License and Attribution
 
-No license has been selected. Confirm ownership and attribution for source code, demo photos, Flutter, ML Kit, bridge packages, icons, and other assets before public release or submission.
+No project license has been selected. Confirm source-code ownership, dependency licenses, demo-photo consent, asset attribution, and competition rules before public submission or release.

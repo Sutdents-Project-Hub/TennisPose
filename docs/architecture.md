@@ -22,7 +22,7 @@ Android device
 |---|---|---|
 | Presentation | Page layout, side choice, loading/error state, image display, `CustomPainter` | Call ML Kit directly or decide geometry |
 | Domain | Point validation, angle calculation, result state, feedback rule | Access plugins or device permissions |
-| Data | Gallery picker and native pose bridge adapters | Persist images or make medical claims |
+| Data | Native pose bridge adapter and landmark mapping | Persist images or make medical claims |
 | Platform | Android/iOS ML Kit and permission configuration | Hold product feedback logic |
 
 ## Geometry Contract
@@ -34,7 +34,7 @@ cos(theta) = dot(S - E, W - E) / (norm(S - E) * norm(W - E))
 angle = degrees(arccos(clamp(cos(theta), -1, 1)))
 ```
 
-The domain layer rejects missing, non-finite, low-confidence, or zero-length landmarks. It returns a typed failure rather than an angle when the calculation is not trustworthy.
+The data layer rejects missing or below-threshold landmarks at a minimum confidence of 0.55. The domain layer rejects non-finite or zero-length geometry. Both paths return a typed failure rather than an angle when the calculation is not trustworthy.
 
 ## Result States
 
@@ -46,11 +46,21 @@ The domain layer rejects missing, non-finite, low-confidence, or zero-length lan
 | Analyzed | Required landmarks and valid geometry | Show annotated image, angle, range, and feedback. |
 | Cannot analyze | Denial, cancellation, unsupported input, missing landmarks, or invalid geometry | Explain the issue and allow a new selection without a score. |
 
+## Implemented Modules
+
+| Path | Responsibility |
+|---|---|
+| `presentation/pose_analysis_page.dart` | Gallery selection, arm choice, app states, and user-facing recovery. |
+| `presentation/result_overlay_painter.dart` | Image rendering, coordinate scaling, arm segments, points, and angle label. |
+| `domain/pose_analysis.dart` | Pure Dart models, confidence contract, angle calculation, and feedback rule. |
+| `data/ml_kit_pose_analyzer.dart` | Accurate single-image ML Kit detector and landmark mapping. |
+
 ## Android-First Boundary
 
-- The first executable proof is an Android debug build on a physical device.
-- iOS is not promised until Android gallery access, native pose detection, and rendering pass the same acceptance cases.
-- The bridge must expose the official ML Kit static-image mode. If a package cannot meet that contract, replace it with a maintained adapter or documented platform channel before feature expansion.
+- The Android debug build and Android 36 emulator launch are verified.
+- The emulator verified layout, system picker launch, and safe picker cancellation.
+- A physical Android device with authorized in-range, adjustment, and unsuitable photos is still required to accept native pose behavior and overlay alignment.
+- iOS simulator debug compilation is verified, but ML Kit emitted simulator architecture warnings; iOS runtime acceptance remains a follow-up.
 
 ## Data Boundary
 
