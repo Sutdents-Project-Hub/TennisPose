@@ -16,30 +16,22 @@ contracts/
 legal/
 quotations/
 
-# Dependencies, build, and local tools
-node_modules/
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.packages
+# Local Python environment and generated artifacts
 .venv/
 venv/
 __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-dist/
-build/
 coverage/
 .DS_Store
 *.log
-*.iml
 
 # Local image inputs and non-public evaluation data
 uploads/
 data/private/
-tools/desktop_demo/models/
-tools/desktop_demo/.cache/
+models/
+archive/
 
 # IDE
 .idea/

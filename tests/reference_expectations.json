@@ -1,0 +1,89 @@
+{
+  "_comment": [
+    "Verified expectations for the ten authorized reference serve photos.",
+    "'pose' records what the photo actually shows, established by inspection.",
+    "'angle_degrees' is the measured racket-arm elbow angle where one is reported;",
+    "'tolerance' allows for the +/- few degrees of monocular 3D estimation.",
+    "Set TENNISPOSE_SAMPLE_DIR to the folder holding these files to run the suite."
+  ],
+  "arm": "auto",
+  "trophy_minimum": 80.0,
+  "trophy_maximum": 120.0,
+  "tolerance": 6.0,
+  "cases": [
+    {
+      "file": "01_dominic_pagon.jpg",
+      "pose": "ready stance, both hands at the waist",
+      "status": "cannot_analyze",
+      "reason_code": "not_trophy_pose"
+    },
+    {
+      "file": "02_mcenroe_serve.jpg",
+      "pose": "left-handed trophy position",
+      "status": "analyzed",
+      "arm": "left",
+      "in_demo_range": true,
+      "angle_degrees": 100.8
+    },
+    {
+      "file": "03_jelena_ostapenko.jpg",
+      "pose": "rear view, racket arm fully hidden behind the body",
+      "status": "cannot_analyze",
+      "reason_code": "ambiguous_arm"
+    },
+    {
+      "file": "04_carlos_alcaraz.jpg",
+      "pose": "trophy position, racket arm foreshortened toward the camera",
+      "status": "analyzed",
+      "arm": "right",
+      "in_demo_range": true,
+      "angle_degrees": 100.9
+    },
+    {
+      "file": "05_gokberk_ergeneman.jpg",
+      "pose": "follow-through, hitting arm extended across the body",
+      "status": "analyzed",
+      "arm": "right",
+      "in_demo_range": false,
+      "angle_degrees": 165.6
+    },
+    {
+      "file": "06_nicolas_mahut.jpg",
+      "pose": "contact, hitting arm fully extended overhead",
+      "status": "analyzed",
+      "arm": "right",
+      "in_demo_range": false,
+      "angle_degrees": 168.3
+    },
+    {
+      "file": "07_tommy_haas.jpg",
+      "pose": "early backswing, dim photo, racket hand still below the shoulder",
+      "status": "cannot_analyze",
+      "reason_code": "not_trophy_pose"
+    },
+    {
+      "file": "08_federer_trophy_pose.jpg",
+      "pose": "trophy position, racket arm foreshortened toward the camera",
+      "status": "analyzed",
+      "arm": "right",
+      "in_demo_range": true,
+      "angle_degrees": 82.6
+    },
+    {
+      "file": "09_djokovic_trophy_pose.jpg",
+      "pose": "trophy position",
+      "status": "analyzed",
+      "arm": "right",
+      "in_demo_range": true,
+      "angle_degrees": 110.7
+    },
+    {
+      "file": "10_sharapova_serve.jpg",
+      "pose": "contact, hitting arm extended overhead",
+      "status": "analyzed",
+      "arm": "right",
+      "in_demo_range": false,
+      "angle_degrees": 144.1
+    }
+  ]
+}

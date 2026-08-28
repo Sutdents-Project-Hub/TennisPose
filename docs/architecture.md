@@ -2,40 +2,34 @@
 
 ## Delivery Model
 
-TennisPose's delivered product is a Flutter mobile application. It reads a gallery image, runs pose inference on-device through a native ML Kit bridge, calculates an elbow angle in pure Dart, and renders the result with Flutter. No server call is required.
-
-`tools/desktop_demo/` is an explicitly separate local developer and presentation runner. It uses Python, MediaPipe Tasks, and OpenCV to test the same three-point concept on a Mac and export an annotated still image. It has no server role and does not share inference code or results with the Flutter application.
+TennisPose is a local Streamlit web application. A browser connects to a Streamlit process on the same machine; the process decodes one uploaded image, runs local MediaPipe PoseLandmarker CPU inference over a few variants of that image, selects and validates the racket arm, pools the elbow angle, and returns an annotated result. No server, cloud API, database, or remote model is required.
 
 ```text
-Android device
-  -> Flutter page and gallery picker
-  -> local image bytes
-  -> Flutter native adapter
-  -> official ML Kit Pose Detection SDK
-  -> shoulder, elbow, wrist validation
-  -> pure Dart angle calculation
-  -> Flutter CustomPainter overlay
-  -> result state and feedback UI
+Local browser
+  -> Streamlit upload, arm mode, and target range
+  -> in-memory image bytes
+  -> local MediaPipe PoseLandmarker (CPU, loaded once per process)
+  -> per-arm reliability, body scale, and trophy-position gate
+  -> racket-arm selection (auto or explicit)
+  -> 3D elbow angle over original + downscaled + mirrored passes
+  -> median angle, spread, and confidence
+  -> annotated image and typed report
+  -> Streamlit feedback UI
 ```
 
-```text
-Mac local still image
-  -> Python desktop runner
-  -> local MediaPipe PoseLandmarker model
-  -> selected shoulder, elbow, wrist validation
-  -> Python angle calculation
-  -> OpenCV window or explicitly requested result file
-```
+`streamlit_app.py` is the application entry point. `tennispose/` contains reusable local analysis code; it does not expose an HTTP API or run as a separate service.
 
 ## Module Boundaries
 
-| Layer | Responsibility | Must not do |
+| Path | Responsibility | Must not do |
 |---|---|---|
-| Presentation | Page layout, side choice, loading/error state, image display, `CustomPainter` | Call ML Kit directly or decide geometry |
-| Domain | Point validation, angle calculation, result state, feedback rule | Access plugins or device permissions |
-| Data | Native pose bridge adapter and landmark mapping | Persist images or make medical claims |
-| Platform | Android/iOS ML Kit and permission configuration | Hold product feedback logic |
-| Desktop validation tool | Local MediaPipe model invocation, OpenCV annotation, and optional result export | Act as an app backend, infer mobile acceptance, process video, or persist input data |
+| `streamlit_app.py` | Streamlit page, upload control, arm mode, target range, and presentation of results | Contain geometry rules or persist user data |
+| `tennispose/image_input.py` | Enforce JPEG/PNG content, 10 MB upload, and 20 megapixel decode limits before RGB conversion | Persist source bytes or accept another format |
+| `tennispose/pose_math.py` | Point validation, 2D and 3D angle calculation, body scale, trophy-position gate, pooling, confidence, and feedback rule | Import Streamlit, OpenCV, MediaPipe, files, or network services |
+| `tennispose/pose_detector.py` | Cache the local model, run the inference passes, select the racket arm, and build the typed report | Create a backend, persist images, draw, or make medical claims |
+| `tennispose/annotate.py` | Draw the skeleton, measured arm, angle arc, and result banner onto one BGR canvas | Decide a verdict or run inference |
+| `tests/` | Deterministic coverage of geometry, gating, selection, entry-point guards, and reference-photo accuracy | Depend on a browser or on photos that cannot be skipped |
+| `models/` | Ignored local MediaPipe model dependency | Store user images or tracked project assets |
 
 ## Geometry Contract
 
@@ -46,38 +40,64 @@ cos(theta) = dot(S - E, W - E) / (norm(S - E) * norm(W - E))
 angle = degrees(arccos(clamp(cos(theta), -1, 1)))
 ```
 
-The data layer rejects missing or below-threshold landmarks at a minimum confidence of 0.55. The domain layer rejects non-finite or zero-length geometry. Both paths return a typed failure rather than an angle when the calculation is not trustworthy.
+The vectors come from MediaPipe's **`pose_world_landmarks`**, which are metric 3D
+coordinates relative to the hip midpoint. This is a correctness requirement, not
+an optimization: a serve points the racket arm toward or away from the camera, so
+the same formula over the flat normalized landmarks reports a foreshortened angle.
+On the reference photos the projection understated the bend by up to 60 degrees.
+The 2D value is still computed and surfaced in the interface for comparison, but
+never decides a verdict.
+
+## Selection and Gating Contract
+
+Positions are normalized by a body scale — the shoulder-line to hip-line distance
+in pixels, falling back to shoulder width when the hips are hidden — so the same
+thresholds hold at any photo size. `rise` is measured upward from the arm's own
+shoulder, so a positive value means "above the shoulder".
+
+| Rule | Threshold | Purpose |
+|---|---|---|
+| Landmark reliability | visibility >= 0.35 | Reject an arm the model is guessing at rather than seeing |
+| Wrist raised | `wrist_rise` >= -0.25 | Reject an arm that has swung down past the trophy position |
+| Elbow raised | `elbow_rise` >= -0.45 | Reject a hand resting at the waist with the forearm folded up |
+| Racket arm (auto) | most bent surviving arm | The tossing arm is straight and high; the racket arm is folded |
+| Ambiguity | one arm usable, other hidden | Refuse: either hand could hold the racket |
+| Confidence | median deviation across passes | Grade the reading; refuse when no majority agrees |
+
+An explicit left/right selection overrides auto-detection. Reliability still
+blocks an unmeasurable arm, but the trophy-position gate becomes a caution
+carried in the report rather than a refusal, so a deliberate choice is honored.
+
+Every rejection returns `cannot analyze` with a reason code, never a score. Valid
+angles are mapped to an adjustable inclusive demonstration range that defaults to
+80–120 degrees: green when in range and red when adjustment is suggested.
 
 ## Result States
 
-| State | Trigger | App behavior |
+| State | Trigger | Browser behavior |
 |---|---|---|
-| Idle | No photo selected | Explain the required photo and permission boundary. |
-| Image selected | Valid local image selected | Show preview and side selection. |
-| Analyzing | Native bridge running | Disable duplicate actions and show progress. |
-| Analyzed | Required landmarks and valid geometry | Show annotated image, angle, range, and feedback. |
-| Cannot analyze | Denial, cancellation, unsupported input, missing landmarks, or invalid geometry | Explain the issue and allow a new selection without a score. |
+| Idle | No image uploaded | Explain the one-photo requirement and local-processing boundary. |
+| Image ready | A readable JPEG or PNG is uploaded | Keep the current arm selector visible; after inference, show only the annotated result rather than a duplicate original-photo preview. |
+| Analyzing | The current upload or any setting changes | Run the local inference passes and show Streamlit's progress indicator. |
+| Analyzed | An arm was selected, gated, and pooled successfully | Show annotated image, angle, configured range, confidence, green/red feedback, and the measurement detail panel. |
+| Cannot analyze | Any reason code below | Explain the issue and allow another image without a score. |
 
-## Implemented Modules
+### Cannot-analyze reason codes
 
-| Path | Responsibility |
+| Code | Meaning |
 |---|---|
-| `presentation/pose_analysis_page.dart` | Gallery selection, arm choice, app states, and user-facing recovery. |
-| `presentation/result_overlay_painter.dart` | Image rendering, coordinate scaling, arm segments, points, and angle label. |
-| `domain/pose_analysis.dart` | Pure Dart models, confidence contract, angle calculation, and feedback rule. |
-| `data/ml_kit_pose_analyzer.dart` | Accurate single-image ML Kit detector and landmark mapping. |
+| `no_pose` | No person was detected in the photo. |
+| `no_scale` | The player is too small or too cropped to normalize positions against. |
+| `no_reliable_arm` | Neither arm was visible enough to measure. |
+| `arm_not_visible` | The explicitly selected arm was not visible enough to measure. |
+| `not_trophy_pose` | Neither arm is raised into a serve preparation position. |
+| `ambiguous_arm` | Only one arm is usable and the other is hidden, so the racket hand is unknown. |
+| `invalid_geometry` | Zero-length or non-finite shoulder-elbow-wrist geometry. |
+| `unstable` | The inference passes disagreed with no majority to trust. |
 
-## Android-First Boundary
+## Local Processing Boundary
 
-- The Android debug build and Android 36 emulator launch are verified.
-- The emulator verified layout, system picker launch, and safe picker cancellation.
-- A physical Android device with authorized in-range, adjustment, and unsuitable photos is still required to accept native pose behavior and overlay alignment.
-- iOS simulator debug compilation is verified, but ML Kit emitted simulator architecture warnings; iOS runtime acceptance remains a follow-up.
-- The desktop runner is verified only as a local concept/prototype path. Its MediaPipe landmarks can differ from ML Kit landmarks, so it cannot close the Android physical-device acceptance gate.
-
-## Data Boundary
-
-- Photo bytes, landmarks, and results stay in memory for the active analysis.
-- No image, result, account, analytics event, database record, or remote API is part of this design.
-- The desktop runner reads the operator-selected source file locally and writes an annotated result only to an explicit `--output` path. Its ignored MediaPipe model file is a local dependency, not user data.
-- Cloud upload, history, sharing, or remote AI is an architecture and privacy scope change requiring explicit approval.
+- Image bytes, landmarks, angle, and feedback stay in memory for the active local Streamlit session. JPEG/PNG content is rechecked after upload; the app rejects files above 10 MB or 20 megapixels before RGB conversion.
+- The MediaPipe model is downloaded once to an ignored `models/` path. Loading it is local; inference does not upload a photo or call a remote service.
+- The application does not intentionally write uploaded photos, landmark coordinates, or results to disk, logs, databases, or history.
+- Public deployment, result storage, sharing, telemetry, camera input, or video support are separate architecture and privacy changes requiring explicit approval.

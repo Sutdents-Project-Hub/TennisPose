@@ -2,41 +2,46 @@
 
 ## Target
 
-The expected target is the Congressional App Challenge or another confirmed student-app competition. This repository does not verify current eligibility, deadline, submission fields, video duration, repository visibility, or platform requirements. Confirm them from the organizer's official source before submitting.
+The expected target is the Congressional App Challenge or another confirmed student-app competition. This repository does not verify current eligibility, deadline, submission fields, video duration, repository visibility, or whether a locally served web application is accepted. Confirm those facts from the organizer's official source before submitting.
 
 ## Demo Narrative
 
-Tennis learners may not have instant coaching feedback. TennisPose gives a transparent first look at one Trophy Pose photo: it shows the relevant arm landmarks, calculates an elbow angle locally on the phone, and explains the displayed result.
+Tennis learners may have a serve photo but no immediate visual explanation of one key Trophy Pose arm angle. TennisPose accepts one local image, finds the racket arm, draws the relevant landmarks, calculates the elbow angle in 3D, and shows transparent demonstration feedback.
 
-The claim is limited to visualizing a photo-based demonstration range. The app does not diagnose injury, certify a serve, or replace a coach.
+The claim is limited to a photo-based configurable demonstration range. The app does not diagnose injury, certify a serve, or replace a coach.
 
-## Two-Minute Mobile Demo
+## Two-Minute Local Web-App Demo
 
 | Time | Content |
 |---:|---|
-| 0:00-0:20 | Learner problem, Android-first decision, and single-photo boundary. |
-| 0:20-0:50 | Select an authorized adjustment-case photo and show overlay, angle, and red feedback. |
-| 0:50-1:20 | Select an authorized in-range photo and show the same local calculation with green feedback. |
-| 1:20-1:40 | Explain shoulder-elbow-wrist geometry and on-device processing. |
-| 1:40-2:00 | State privacy handling, limits, and the role of a coach for meaningful advice. |
+| 0:00-0:20 | Explain the learner problem, single-photo scope, and local Streamlit delivery. |
+| 0:20-0:45 | Upload an authorized adjustment-case photo and show overlay, angle, and red feedback. |
+| 0:45-1:10 | Upload an authorized in-range photo and show the same local calculation with green feedback. |
+| 1:10-1:35 | Open "How this number was measured": the shoulder-elbow-wrist geometry, the 3D reading beside the flat 2D one, the three pooled passes, and local CPU processing. |
+| 1:35-1:50 | Upload a photo that is not a trophy position and show the app refusing with a reason instead of inventing a score. |
+| 1:50-2:00 | State privacy handling, viewpoint limitations, and the coach/medical boundary. |
 
-## Desktop Prototype Recording
+The strongest algorithm moment is the 3D-versus-2D comparison. On the reference
+trophy photos the flat image-plane angle reads 33 and 43 degrees where the arms
+are actually near 83 and 101, because a serve points the racket arm at the
+camera. Showing that gap explains why the depth-aware landmarks are used and why
+the geometry is not a cosmetic detail.
 
-Before mobile-device acceptance, the team may record `tools/desktop_demo/` as an algorithm prototype: open one authorized still image, show the annotated arm and reported angle, then show a cannot-analyze case. Label this honestly as a local MediaPipe desktop prototype. It does not demonstrate the delivered Flutter/ML Kit path and must not be presented as a mobile app run.
+Record the local browser run as the delivered product. Do not portray it as a mobile application, native app, cloud service, or real-time video coach.
 
 ## Evidence and Asset Rules
 
 - Use only team-created photos or assets with documented permission for competition and public demonstration.
-- Record package, native SDK, bridge, image, icon, font, and code attribution before submission.
+- Record Python, Streamlit, MediaPipe, model, image, icon, font, and code attribution before submission.
 - Do not include private images, personal data, secrets, contracts, or unlicensed media in the repository or recording.
 - A recorded fallback is allowed only when clearly labelled as recorded evidence, not represented as a live run.
-- Commons test photos are local prototype inputs only. The final public recording should use team-owned or separately authorized images with source and attribution records.
+- Any sample photo used in a public video must have verified permission, required attribution, and a scope-compatible caption. Prefer team-owned or separately authorized images.
 
 ## Submission Checklist
 
-- [ ] Official rules, deadline, format, repository visibility, and platform expectations have been verified.
-- [ ] The real-device recording matches the current code and documented scope.
-- [ ] Green, red, cancellation/permission, and cannot-analyze paths are demonstrated.
-- [ ] Flutter, ML Kit, bridge packages, and assets have complete attribution and license review.
-- [ ] Documentation contains no unsupported accuracy, injury, medical, or competition-compliance claim.
+- [ ] Official rules, deadline, format, repository visibility, and web-app expectations have been verified.
+- [ ] The local Streamlit recording matches the current code and documented scope.
+- [ ] Green, red, invalid-upload, not-a-trophy-position, and cannot-analyze paths are demonstrated.
+- [ ] Python dependencies, the MediaPipe model, and assets have complete attribution and license review.
+- [ ] Documentation contains no unsupported accuracy, injury, medical, deployment, or competition-compliance claim.
 - [ ] No secrets, private photos, personal data, contracts, or confidential documents are included.

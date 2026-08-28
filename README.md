@@ -1,113 +1,129 @@
 # TennisPose - AI Tennis Trophy Pose Coach
 
-> Stage: competition MVP | Product: native mobile app | Primary platform: Android | Deployment: none
+> Stage: competition MVP | Product: local Streamlit web application | Deployment: none
 
-TennisPose analyzes one tennis serve Trophy Pose photo on-device. The user selects a side-view image, chooses the left or right arm, and receives an annotated elbow angle with explainable green or red feedback. A separate local desktop tool is included for quick algorithm checks and recorded prototype demonstrations before or alongside the mobile UI.
+TennisPose analyzes one authorized tennis serve Trophy Pose photo in a local browser session. The user uploads a JPEG or PNG; the app locates the racket arm, measures the shoulder-elbow-wrist angle from MediaPipe's 3D world landmarks, and returns an annotated green, red, or cannot-analyze result.
 
-It is deliberately a single-photo learning aid. It is not a live-video coach, full-swing tracker, injury-prevention system, or medical product.
+It is deliberately a single-photo learning aid. It is not a live-video coach, full-swing tracker, injury-prevention system, or medical product. The 80–120 degree inclusive interval is configurable demonstration logic, not a validated coaching or clinical standard.
 
-## Implemented MVP
+## How the Measurement Works
 
-- Android and iOS Flutter project generated directly in `app/` with no nested repository.
-- Android system photo picker with cancellation and readable failure handling.
-- Left/right arm selection.
-- Static-image pose detection through Google ML Kit's native SDK and a Flutter platform-channel adapter.
-- Shoulder, elbow, and wrist confidence validation before any score is shown.
-- Pure Dart elbow-angle geometry and a configurable 90-105 degree demonstration rule.
-- `CustomPainter` overlay with landmarks, arm segments, angle label, and green/red status.
-- Focused idle, selected, analyzing, analyzed, and cannot-analyze states.
-- No account, backend, database, cloud upload, remote AI, API key, or saved history.
-- A local Python/MediaPipe/OpenCV desktop runner for one still-image algorithm check, annotated result export, and non-mobile demonstration.
+The accuracy of this app rests on three decisions, each of which is testable:
+
+1. **The angle is measured in 3D, not on the flat image.** MediaPipe returns both
+   normalized image landmarks and metric `pose_world_landmarks`. A serve puts the
+   racket arm at a steep angle to the camera, so the flat 2D projection
+   understates the bend badly — on the reference photos it read 33° where the arm
+   was actually near 83°, and 43° where it was near 101°. Every verdict uses the
+   3D landmarks; the 2D value is shown only for comparison.
+2. **The racket arm is detected, not guessed.** At the trophy position the tossing
+   arm is nearly straight and high while the racket arm is folded to roughly a
+   right angle near shoulder height. Auto-detect measures the more bent of the
+   arms that are both visible and already raised, which finds a left-handed
+   server's arm as readily as a right-handed one. The choice can be overridden.
+3. **The same photo is measured three times.** The original, a downscaled copy,
+   and a mirrored copy each produce an angle; the reported value is their median
+   and the disagreement between them is reported as confidence. A single
+   inference pass can be confidently wrong on a dark or unusual photo — pooling
+   turns that silent failure into either a corrected value or a visible caution.
+
+The app refuses rather than guesses in auto-detect mode. A ready stance, a
+contact frame, a follow-through, a hidden racket arm, a player too small in the
+frame, or three passes that cannot agree return cannot-analyze with a specific
+reason, never a score. A manual left/right override instead honors a clearly
+visible selected arm and labels a non-trophy reading with a caution.
+
+## MVP Scope
+
+- A local Streamlit interface served from `streamlit_app.py`.
+- JPEG and PNG content validation for one still image, with a 10 MB upload and 20 megapixel decode limit.
+- Automatic racket-arm detection, with a manual left/right override.
+- Local CPU inference with MediaPipe PoseLandmarker, loaded once per process.
+- Shoulder, elbow, and wrist reliability checks before any angle is shown.
+- An auto-detect trophy-position gate that rejects photos showing a different moment of the serve; a manual arm override preserves a visible-arm reading with a caution.
+- Three-point elbow-angle geometry from 3D world landmarks, pooled over three passes.
+- Inclusive, adjustable 80–120 degree demonstration feedback with a reported confidence.
+- Annotated in-range (green), adjustment (red), or cannot-analyze result.
+- No account, backend, database, cloud upload, remote AI, API key, saved history, camera, or video.
 
 ## Technology
 
 | Responsibility | Implementation |
 |---|---|
-| App framework | Flutter 3.41.9 and Dart 3.11.5 |
-| Gallery selection | `image_picker` 1.2.3 |
-| Pose landmarks | `google_mlkit_pose_detection` 0.15.0 in accurate, single-image mode |
-| Angle math | Pure Dart vectors, dot product, and trigonometry |
-| Overlay | Flutter `CustomPainter` |
-| Android baseline | minSdk 23; app ID `com.studentsprojecthub.tennispose` |
-| iOS baseline | iOS 15.5; photo-library purpose string configured |
-| Desktop validation tool | Python 3.11, MediaPipe Tasks 0.10.35, OpenCV Contrib 5.0.0.93, and NumPy 2.4.6 |
+| Local web UI | Streamlit |
+| Runtime | Python 3.11 or a compatible Python release |
+| Pose landmarks | MediaPipe Tasks PoseLandmarker, local CPU delegate |
+| Geometry, gating, and feedback | `tennispose.pose_math` |
+| Landmark extraction and arm selection | `tennispose.pose_detector` |
+| Result drawing | `tennispose.annotate` |
+| Tests | Python `unittest` |
+| Dependencies | Pinned in `requirements.txt` |
 
-The Flutter package is a community bridge to the native Google ML Kit SDK, not an official Google Flutter plugin. The native pose API is processed locally and remains subject to the SDK and bridge limitations documented in [integrations](docs/integrations.md).
+The browser is only a local interface to the Python process. The application makes no analysis-time network request; after the one-time model download, photo analysis stays on the local machine.
 
 ## Run Locally
 
-Prerequisites: Flutter 3.41.9 or a compatible stable release, Dart 3.11.5 or compatible, and an Android SDK/toolchain.
-
-```bash
-cd app
-flutter pub get
-flutter run
-```
-
-Choose an Android device for the primary MVP flow. Use only a photo you own or are authorized to analyze.
-
-## Run the Desktop Algorithm Demo
-
-The standalone tool does not require an emulator or a mobile UI. It opens an OpenCV window for one still image and can also save the annotated result for a screen recording. It is a separate MediaPipe prototype, so it validates the concept but does not replace the Flutter/ML Kit physical-device gate.
+Use Python 3.11 when available. Create the ignored environment at the repository root, install the root requirements, then download the model to the ignored local model path.
 
 ```bash
 /opt/homebrew/bin/python3.11 -m venv .venv
-.venv/bin/python -m pip install -r tools/desktop_demo/requirements.txt
-mkdir -p tools/desktop_demo/models
+.venv/bin/python -m pip install -r requirements.txt
+mkdir -p models
 curl -L --fail \
-  --output tools/desktop_demo/models/pose_landmarker_heavy.task \
+  --output models/pose_landmarker_heavy.task \
   https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/latest/pose_landmarker_heavy.task
-.venv/bin/python tools/desktop_demo/run_pose_demo.py \
-  --image /Users/felix/Desktop/TennisPose_Test_Images/djokovic_trophy_pose.jpg \
-  --arm right
+.venv/bin/streamlit run streamlit_app.py
 ```
 
-For a non-interactive recording artifact, use `--no-display --output <path>`. Detailed commands and source records are in [tools/desktop_demo/README.md](tools/desktop_demo/README.md).
+Open the local URL shown by Streamlit and upload a photo you own or are authorized to analyze. The racket arm is detected automatically; override it in the sidebar if the photo is unusual. The page runs the local analysis immediately for the current upload and settings. Do not upload photos to a public deployment: public hosting is outside this MVP.
 
 ## Verify
 
 ```bash
-cd app
-flutter analyze
-flutter test
-flutter build apk --debug
-flutter build ios --simulator --debug --no-codesign
-.venv/bin/python -m unittest tools/desktop_demo/test_pose_math.py
+.venv/bin/python -m unittest discover -s tests -v
 ```
 
-Verified on August 23, 2026:
+`tests/test_reference_photos.py` replays ten authorized reference serve photos
+through the full pipeline and asserts the arm chosen, the verdict, and the angle
+against `tests/reference_expectations.json`. It is the regression gate for
+accuracy: change a threshold and it tells you what moved. Point it at the photos
+with `TENNISPOSE_SAMPLE_DIR`, and it skips cleanly when they or the model are
+absent.
 
-- `flutter analyze`: no issues.
-- `flutter test`: 8 tests passed.
-- Android debug APK: built at `app/build/app/outputs/flutter-apk/app-debug.apk`.
-- Android 36 emulator: app launched, layout inspected, system photo picker opened, and cancellation returned a safe message.
-- iOS simulator debug build: compiled successfully. ML Kit reported simulator architecture warnings, so iOS runtime behavior is not accepted yet.
-- Desktop tool: 5 geometry tests passed. The August 28, 2026 fresh ten-photo local run used usable-scale tennis-serve or Trophy Pose images: eight gave annotated adjustment results and two safely returned cannot-analyze because the selected arm landmarks were unreliable. The images and results remain only in the local Desktop test folder.
+```bash
+TENNISPOSE_SAMPLE_DIR=~/Desktop/TennisPose_Test_Images/normal_use_samples \
+  .venv/bin/python -m unittest discover -s tests -v
+```
 
-Still required for competition acceptance: run pose detection with authorized in-range, adjustment, and unsuitable photos on a physical Android device and record the results. An emulator-only run is not treated as physical-device evidence.
+Before competition submission, manually exercise these local paths in the browser:
+
+- no uploaded image;
+- unsupported or unreadable input;
+- a trophy-position photo that lands in the configured range (green);
+- a trophy-position photo outside that range (red);
+- a photo that is not a trophy position at all in auto-detect mode, which must refuse rather than score; and
+- an occluded or unreliable-landmark photo that returns cannot-analyze without a score.
 
 ## Repository Layout
 
 ```text
-app/
-  android/
-  ios/
-  lib/
-    main.dart
-    features/pose_analysis/
-      data/
-      domain/
-      presentation/
-  test/
-  pubspec.yaml
-  pubspec.lock
+streamlit_app.py             # local Streamlit entry point
+requirements.txt             # pinned Python dependencies
+tennispose/
+  __init__.py
+  pose_math.py               # pure geometry, gating rules, and feedback
+  image_input.py             # content validation and safe JPEG/PNG decoding
+  pose_detector.py           # MediaPipe inference, arm selection, and reporting
+  annotate.py                # result drawing
+tests/
+  test_pose_math.py          # geometry, gating, and pooling
+  test_arm_selection.py      # racket-arm detection and refusal reasons
+  test_analysis_pipeline.py  # entry-point guards and empty-photo behavior
+  test_reference_photos.py   # accuracy regression over authorized photos
+  test_image_input.py        # upload validation
+  reference_expectations.json
+models/                      # ignored local MediaPipe model file
 docs/
-tools/
-  desktop_demo/
-    run_pose_demo.py
-    pose_math.py
-    requirements.txt
-    sample-sources.md
 ```
 
 ## Documentation
@@ -115,15 +131,13 @@ tools/
 - [Project profile](docs/project-profile.md)
 - [Product requirements](docs/project-overview.md)
 - [Solution architecture](docs/architecture.md)
-- [MVP roadmap and test evidence](docs/mvp-plan.md)
+- [MVP roadmap and test plan](docs/mvp-plan.md)
 - [Competition plan](docs/competition.md)
 - [Data and storage boundary](docs/data-and-storage.md)
-- [Native bridge and dependency notes](docs/integrations.md)
+- [Dependencies](docs/integrations.md)
 - [Security and privacy](docs/security-and-privacy.md)
-- [Mobile app component guide](app/README.md)
-- [Desktop algorithm demo](tools/desktop_demo/README.md)
 - [Repository working rules](AGENTS.md)
 
 ## License and Attribution
 
-No project license has been selected. Confirm source-code ownership, dependency licenses, demo-photo consent, asset attribution, and competition rules before public submission or release.
+No project license has been selected. Confirm source-code ownership, dependency licenses, model terms, demo-photo consent, asset attribution, and current competition rules before public submission or release.

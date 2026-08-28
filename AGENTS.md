@@ -2,55 +2,54 @@
 
 ## Product Context
 
-TennisPose is a competition-stage Flutter mobile app. It analyzes one gallery photo of a tennis serve Trophy Pose, visualizes a shoulder-elbow-wrist angle, and presents transparent red or green feedback.
+TennisPose is a competition-stage local Streamlit web application. It accepts one JPEG or PNG tennis-serve Trophy Pose photo, lets the user choose an arm, detects the selected shoulder, elbow, and wrist with a local MediaPipe PoseLandmarker CPU model, calculates the elbow angle, and presents an annotated green, red, or cannot-analyze result.
 
-The MVP is an Android-first native app in `app/`. iOS is a follow-up target after Android physical-device verification. The project has no backend, database, cloud model, account system, or video pipeline. `tools/desktop_demo/` is a user-approved local Python validation and presentation runner, not a backend or second product.
+The delivered product runs locally from `streamlit_app.py`. It has no backend, database, cloud model, account system, deployment, camera capture, or video pipeline. `tennispose/` contains reusable analysis logic; it is part of the product, not a service.
 
 ## Technology Boundary
 
-- Use Flutter and Dart for the UI, state, geometry, and overlay rendering.
-- Use the official native ML Kit Pose Detection SDK through a Flutter adapter for on-device landmarks.
-- Keep gallery access, pose detection, angle calculation, and rendering inside `app/`.
-- Keep `tools/desktop_demo/` limited to local single-image MediaPipe/OpenCV concept validation; it must not share results with `app/`, become a server, or be treated as Flutter/ML Kit acceptance evidence.
-- Do not add Streamlit, React Native, a web frontend, a backend API, cloud storage, external AI, camera capture, or video support without explicit approval.
-- Keep the selected Flutter bridge behind the data-layer adapter and do not treat native pose behavior as accepted until it passes the physical Android photo cases and license review.
+- Use Python and Streamlit for the local web interface and result state.
+- Use the local MediaPipe Tasks PoseLandmarker CPU delegate for one-image landmarks.
+- Keep photo decoding, landmark validation, angle calculation, annotation, and result rendering in this repository's local process.
+- Keep geometry and feedback rules in the `tennispose/` package, separate from Streamlit widget code.
+- Do not add Flutter, Android/iOS targets, React Native, a backend API, cloud storage, external AI, camera capture, or video support without explicit approval.
+- Do not make the local application publicly hosted or imply that a browser deployment exists without explicit approval and a separate privacy/deployment review.
 
 ## Scope Guardrails
 
-- Analyze one still image, one Trophy Pose, and one user-selected arm side.
+- Analyze one still image, one Trophy Pose, and one racket arm — detected automatically, overridable by the user.
+- The adjustable 80–120 degree inclusive interval is demonstration logic, not coaching, medical, or injury-prevention validation.
+- Measure the elbow angle from MediaPipe `pose_world_landmarks`. The flat 2D projection understates a foreshortened arm by up to 60 degrees and must never decide a verdict.
+- Prefer refusing with a reason code over reporting a number the pipeline cannot stand behind.
+- Missing, unreliable, non-finite, or degenerate shoulder/elbow/wrist landmarks mean `cannot analyze`; never generate a score from incomplete data.
 - Do not add live video, continuous tracking, full-swing scoring, injury claims, accounts, sharing, payments, or social features.
-- The angle range is a configurable demonstration range until its source and viewpoint are confirmed.
-- Required landmarks missing, unreliable, or degenerate means `cannot analyze`; never generate a score from incomplete data.
 
 ## Documentation Sources of Truth
 
-- `README.md`: product, stack, scope, and status.
+- `README.md`: product, local setup, commands, scope, and status.
 - `docs/project-overview.md`: user needs, acceptance, and exclusions.
-- `docs/architecture.md`: Flutter modules, native boundary, geometry, and result states.
-- `docs/mvp-plan.md`: milestones, device proof, tests, and delivery evidence.
+- `docs/architecture.md`: Streamlit modules, local inference, geometry, and result states.
+- `docs/mvp-plan.md`: milestones, test plan, and delivery evidence.
 - `docs/competition.md`: demo, assets, and submission checklist.
-- `docs/integrations.md`: ML Kit and Flutter bridge decision record.
-- `docs/data-and-storage.md` and `docs/security-and-privacy.md`: photo handling and permissions.
-- `app/README.md`: Flutter-root contract.
-- `tools/desktop_demo/README.md`: desktop tool setup, run, test, model, and asset-source contract.
+- `docs/integrations.md`: Python, Streamlit, and MediaPipe dependency decision record.
+- `docs/data-and-storage.md` and `docs/security-and-privacy.md`: photo handling and privacy boundary.
 
 Documentation synchronization is part of done. Update the document that owns any changed product, architecture, dependency, command, test, privacy, or competition fact in the same task.
 
-## Device and Privacy Rules
+## Local Data and Privacy Rules
 
-- Test a physical Android device before claiming the app works; emulator-only evidence is insufficient for gallery permissions and native pose detection.
-- Use only team-owned or authorized photos. Do not persist photo bytes, landmarks, or results.
-- Keep downloaded prototype photos and generated annotations in the ignored local Desktop folder; never commit them. Do not redistribute the ignored MediaPipe model without checking its terms.
+- Use only team-owned or authorized photos. Do not persist uploaded photo bytes, landmarks, or results.
+- Streamlit's upload object and decoded image data must exist only for the active local session. Do not write them to tracked paths, logs, test fixtures, or caches.
+- Keep downloaded prototype photos and generated annotations in ignored local folders; never commit them. Do not redistribute the MediaPipe model without checking its terms.
 - Do not commit test photos, personal information, API keys, `.env` files, certificates, contracts, or confidential material.
-- Keep SDK versions, platform requirements, permissions, and bridge details synchronized with verified manifests, builds, and device evidence.
+- Keep Python versions, dependency constraints, model path, and local-run commands synchronized with `requirements.txt`, implementation, and verified test evidence.
 
 ## Verification Rules
 
-- Treat the repository as an executable Flutter MVP, while keeping emulator/build evidence separate from physical-device pose acceptance.
-- Run `flutter analyze`, `flutter test`, builds, and device checks only when they exist, and report skipped checks truthfully.
-- Unit-test angle geometry, feedback rules, invalid landmarks, and result-state transitions.
-- Run `python -m unittest tools/desktop_demo/test_pose_math.py` when changing the desktop geometry tool; report its evidence separately from Flutter checks.
-- Manually test no selection, cancelled/denied selection, invalid image, reliable analysis, and cannot-analyze paths.
+- Treat the repository as an executable local Streamlit MVP. A unit-test pass does not establish pose-detection behavior for real photos.
+- Run `python -m unittest discover -s tests -v` after changing geometry, feedback rules, invalid-landmark handling, or result-state behavior.
+- Run the Streamlit application locally after changing the UI, upload handling, local inference, or annotation rendering, and report skipped checks truthfully.
+- Manually test no upload, unsupported input, invalid image, reliable in-range analysis, adjustment analysis, and cannot-analyze paths with authorized local photos.
 
 ## Git Rules
 

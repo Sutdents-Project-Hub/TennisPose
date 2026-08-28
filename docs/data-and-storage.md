@@ -4,22 +4,22 @@
 
 | Data | Source | Processing | Persistence |
 |---|---|---|---|
-| Selected photo | Authorized phone-gallery image selected through the platform picker | Local file-path handoff, in-memory decode, local pose detection, overlay rendering | No app-controlled record; the OS or picker plugin may manage a temporary local copy |
-| Pose landmarks | Native ML Kit result for current image | In-memory validation and angle calculation | None |
-| Angle and feedback | Pure Dart domain logic | Visible in current result state | None |
+| Selected photo | Authorized JPEG or PNG uploaded to the local Streamlit session | Content validation, then in-memory decode, local pose detection, and overlay rendering | None by the application |
+| Pose landmarks | Local MediaPipe result for the current image | In-memory validation and angle calculation | None |
+| Angle and feedback | Pure Python demonstration rule | Visible in the current browser session | None |
 | Demo assets | Team-controlled local photos | Permission review before recording | Do not commit without documented public-use approval |
-| Desktop prototype input | Operator-selected local JPEG or PNG | Local MediaPipe analysis and OpenCV annotation | No copied source file; optional annotated result only at the operator's explicit `--output` path |
-| Desktop PoseLandmarker model | Official model download | Local model inference | Ignored local dependency; not user data |
+| PoseLandmarker model | Official model download | Local CPU inference | Ignored local dependency; not user data |
 
 ## Rules
 
-- The MVP has no database, account, analytics pipeline, upload bucket, app-managed cache, or result history.
-- The app does not deliberately copy or retain the selected photo. The platform picker may provide a temporary local file governed by the operating system and plugin lifecycle.
-- The mobile app must not write photos, landmark coordinates, or results to logs, test fixtures, screenshots, temporary folders, or Git. The desktop runner may write only its rendered annotation to an explicit operator-selected output path; it does not write raw photo copies or landmark-coordinate files.
-- `uploads/` and `data/private/` remain ignored as a defensive rule, not as an approved storage design.
-- The local Desktop test folder and `tools/desktop_demo/models/` are excluded from Git. Do not move test photos, annotated examples, or model binaries into tracked paths.
-- A feature that saves, shares, uploads, or synchronizes a photo requires new consent, retention, deletion, access-control, and backup design.
+- The MVP has no database, account, analytics pipeline, upload bucket, app-managed cache, result history, or public deployment.
+- The app must not deliberately write uploaded photos, landmark coordinates, annotated images, or results to disk, logs, test fixtures, screenshots, temporary folders, or Git.
+- Browser and Streamlit session memory may hold the current uploaded bytes and result only as needed to display the current analysis. Closing or refreshing the session is not a persistence feature.
+- The application rejects non-JPEG/PNG content, files above 10 MB, and images above 20 megapixels before RGB conversion. Those limits reduce accidental or hostile resource exhaustion; they do not create a storage record.
+- `uploads/`, `data/private/`, and `models/` remain ignored defensively. They are not approved storage locations for user data.
+- Do not move test photos, annotated examples, or model binaries into tracked paths.
+- A feature that saves, shares, uploads, synchronizes, or publicly serves a photo requires new consent, retention, deletion, access-control, and backup design.
 
 ## Asset Review
 
-For each demo image, record ownership, subject consent, competition permission, and whether public repository or video use is allowed.
+For every demo image, record ownership, subject consent, competition permission, and whether public repository or video use is allowed.
