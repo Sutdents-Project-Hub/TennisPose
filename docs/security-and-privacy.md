@@ -10,7 +10,8 @@ The Android-first MVP has no login, payment, database, cloud API, or remote stor
 - The implementation uses the platform gallery picker and configures the iOS photo-library purpose string. Android uses the current system picker flow without a broad storage permission.
 - Keep decoded image data, landmarks, and results in memory for the current analysis only. The selected source image remains under the platform picker and device file lifecycle.
 - Do not transmit photos, landmarks, or results, and do not create app-controlled analysis history.
-- Do not commit real test photos, device identifiers, screenshots containing personal data, or private evaluator notes.
+- The desktop prototype has the same local-only rule. It creates an annotated image only when the operator names an output path and never uploads its input or output.
+- Do not commit real test photos, device identifiers, screenshots containing personal data, private evaluator notes, or downloaded model binaries.
 - Do not create an API key or `.env` requirement for the MVP.
 
 ## Responsible Product Language

@@ -16,6 +16,9 @@ The implementation uses Flutter plus the native Google ML Kit Pose Detection SDK
 | `google_mlkit_commons` | 0.12.0 transitive | Native input-image bridge used by the pose package. |
 | Flutter rendering | SDK | `CustomPainter` overlay implemented and compiled. |
 | `flutter_lints` | 6.0.0 | `flutter analyze` passed with no issues. |
+| MediaPipe Tasks desktop prototype | 0.10.35 | Local single-image PoseLandmarker used only by `tools/desktop_demo/`; a ten-photo run returned eight annotated results and two safe cannot-analyze responses. |
+| OpenCV Contrib desktop prototype | 5.0.0.93 | Local preview window and annotated-file rendering for the desktop tool. |
+| NumPy desktop prototype | 2.4.6 | Desktop tool dependency. |
 
 ## Platform Notes
 
@@ -24,6 +27,7 @@ The implementation uses Flutter plus the native Google ML Kit Pose Detection SDK
 - The iOS simulator debug build succeeds, but native ML Kit dependencies report Apple Silicon simulator architecture warnings. Treat iOS runtime as unaccepted until device testing.
 - ML Kit pose detection remains subject to native SDK accuracy, viewpoint, occlusion, and beta/API limitations.
 - If the bridge becomes unmaintained or fails the physical-device gate, replace it with a documented minimal platform channel rather than introducing cloud processing.
+- The desktop tool downloads the official MediaPipe heavy pose-landmarker model to an ignored local path and explicitly uses the CPU delegate for its single-image workflow. It makes no automatic network request at analysis time. MediaPipe is an independent prototype engine, not a replacement for the Flutter ML Kit bridge; inspect model terms before redistributing it.
 
 ## Primary References
 

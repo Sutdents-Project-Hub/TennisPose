@@ -2,7 +2,9 @@
 
 ## Delivery Model
 
-TennisPose is a single Flutter mobile application. It reads a gallery image, runs pose inference on-device through a native ML Kit bridge, calculates an elbow angle in pure Dart, and renders the result with Flutter. No server call is required.
+TennisPose's delivered product is a Flutter mobile application. It reads a gallery image, runs pose inference on-device through a native ML Kit bridge, calculates an elbow angle in pure Dart, and renders the result with Flutter. No server call is required.
+
+`tools/desktop_demo/` is an explicitly separate local developer and presentation runner. It uses Python, MediaPipe Tasks, and OpenCV to test the same three-point concept on a Mac and export an annotated still image. It has no server role and does not share inference code or results with the Flutter application.
 
 ```text
 Android device
@@ -16,6 +18,15 @@ Android device
   -> result state and feedback UI
 ```
 
+```text
+Mac local still image
+  -> Python desktop runner
+  -> local MediaPipe PoseLandmarker model
+  -> selected shoulder, elbow, wrist validation
+  -> Python angle calculation
+  -> OpenCV window or explicitly requested result file
+```
+
 ## Module Boundaries
 
 | Layer | Responsibility | Must not do |
@@ -24,6 +35,7 @@ Android device
 | Domain | Point validation, angle calculation, result state, feedback rule | Access plugins or device permissions |
 | Data | Native pose bridge adapter and landmark mapping | Persist images or make medical claims |
 | Platform | Android/iOS ML Kit and permission configuration | Hold product feedback logic |
+| Desktop validation tool | Local MediaPipe model invocation, OpenCV annotation, and optional result export | Act as an app backend, infer mobile acceptance, process video, or persist input data |
 
 ## Geometry Contract
 
@@ -61,9 +73,11 @@ The data layer rejects missing or below-threshold landmarks at a minimum confide
 - The emulator verified layout, system picker launch, and safe picker cancellation.
 - A physical Android device with authorized in-range, adjustment, and unsuitable photos is still required to accept native pose behavior and overlay alignment.
 - iOS simulator debug compilation is verified, but ML Kit emitted simulator architecture warnings; iOS runtime acceptance remains a follow-up.
+- The desktop runner is verified only as a local concept/prototype path. Its MediaPipe landmarks can differ from ML Kit landmarks, so it cannot close the Android physical-device acceptance gate.
 
 ## Data Boundary
 
 - Photo bytes, landmarks, and results stay in memory for the active analysis.
 - No image, result, account, analytics event, database record, or remote API is part of this design.
+- The desktop runner reads the operator-selected source file locally and writes an annotated result only to an explicit `--output` path. Its ignored MediaPipe model file is a local dependency, not user data.
 - Cloud upload, history, sharing, or remote AI is an architecture and privacy scope change requiring explicit approval.

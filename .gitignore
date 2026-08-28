@@ -38,6 +38,8 @@ coverage/
 # Local image inputs and non-public evaluation data
 uploads/
 data/private/
+tools/desktop_demo/models/
+tools/desktop_demo/.cache/
 
 # IDE
 .idea/

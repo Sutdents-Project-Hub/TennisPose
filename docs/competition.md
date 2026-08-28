@@ -20,12 +20,17 @@ The claim is limited to visualizing a photo-based demonstration range. The app d
 | 1:20-1:40 | Explain shoulder-elbow-wrist geometry and on-device processing. |
 | 1:40-2:00 | State privacy handling, limits, and the role of a coach for meaningful advice. |
 
+## Desktop Prototype Recording
+
+Before mobile-device acceptance, the team may record `tools/desktop_demo/` as an algorithm prototype: open one authorized still image, show the annotated arm and reported angle, then show a cannot-analyze case. Label this honestly as a local MediaPipe desktop prototype. It does not demonstrate the delivered Flutter/ML Kit path and must not be presented as a mobile app run.
+
 ## Evidence and Asset Rules
 
 - Use only team-created photos or assets with documented permission for competition and public demonstration.
 - Record package, native SDK, bridge, image, icon, font, and code attribution before submission.
 - Do not include private images, personal data, secrets, contracts, or unlicensed media in the repository or recording.
 - A recorded fallback is allowed only when clearly labelled as recorded evidence, not represented as a live run.
+- Commons test photos are local prototype inputs only. The final public recording should use team-owned or separately authorized images with source and attribution records.
 
 ## Submission Checklist
 

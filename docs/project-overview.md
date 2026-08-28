@@ -8,6 +8,8 @@ A learner may have a serve photo but no immediate way to understand one key Trop
 
 The primary user is a tennis learner or student with an Android phone and a clear side-view Trophy Pose photo. The app supports practice reflection and a competition demonstration; it is not for clinical, rehabilitation, or professional biomechanical assessment.
 
+The project team may also use the local desktop algorithm demo to validate still-image behavior and record a prototype walkthrough before the mobile interface is ready. That tool is not a separate end-user product.
+
 ## Primary User Story
 
 As a learner, I can select an authorized Trophy Pose photo from my phone, choose the arm I want to inspect, and see the shoulder-elbow-wrist overlay and angle so I understand the feedback.
@@ -23,6 +25,7 @@ As a learner, I can select an authorized Trophy Pose photo from my phone, choose
 | FR-05 | Render evidence | The image shows relevant points, arm segments, and numeric angle. |
 | FR-06 | Explain result | The app labels a demonstration range and shows neutral in-range or adjustment feedback. |
 | FR-07 | Fail safely | Missing image, cancelled selection, unsupported input, missing landmarks, and invalid geometry never create a score. |
+| DV-01 | Desktop concept check | A team member can run one local still image through the independent desktop tool and receive an annotated result or a clear cannot-analyze message. |
 
 ## Non-Functional Requirements
 
@@ -31,10 +34,11 @@ As a learner, I can select an authorized Trophy Pose photo from my phone, choose
 - Raw photos, landmarks, and results are not persisted after the current analysis.
 - The complete flow is understandable in a two-minute competition video.
 - All visible app copy, source comments, documentation, and repository artifacts use English.
+- The desktop tool remains local: it makes no server request and only writes an annotated image when the operator explicitly supplies `--output`.
 
 ## Out of Scope
 
-- Live camera, video, tracking, ball detection, full-swing scoring, or history.
+- Live camera, video, tracking, ball detection, full-swing scoring, or history, including in the desktop tool.
 - Native iOS delivery before Android acceptance.
 - Sharing, social features, subscriptions, dashboards, or server-side features.
 - Injury or medical claims.
@@ -47,3 +51,4 @@ As a learner, I can select an authorized Trophy Pose photo from my phone, choose
 4. **Pending physical device:** One authorized photo reaches the configured adjustment result.
 5. **Pending physical device:** One unreliable input reaches a clear cannot-analyze state.
 6. **Pending submission review:** Overlay, limitations, demo script, attribution, and behavior agree.
+7. **Verified desktop prototype:** A fresh ten-photo Commons run with one usable-scale tennis player per image produced eight red adjustment results and two safe cannot-analyze results. This is not evidence that the Flutter/ML Kit path behaves identically.
