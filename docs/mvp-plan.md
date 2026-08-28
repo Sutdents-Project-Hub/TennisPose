@@ -14,7 +14,7 @@ The product is a locally served web application. There is no Android, iOS, APK, 
 | 1. Local app bootstrap | Complete | `streamlit_app.py`, `requirements.txt`, and the ignored local model started on `127.0.0.1:8501` on August 28, 2026. |
 | 2. Geometry and feedback tests | Complete | `tests/` covers 2D and 3D geometry, body scale, the trophy-position gate, racket-arm selection, pooling and confidence, entry-point guards, content validation, and size limits; 49 tests passed on August 28, 2026. |
 | 3. Upload, inference, and annotation | Complete | Ten authorized reference photos were replayed through the full pipeline on August 28, 2026: four elite trophy positions returned green with the racket arm auto-detected (including a left-handed server), three post-trophy frames returned red, and three unmeasurable photos returned cannot-analyze with distinct reason codes. Locked in by `tests/test_reference_photos.py`. |
-| 4. Manual local acceptance | Partially verified | The green and cannot-analyze paths were exercised in the local browser on August 28, 2026. The red path is verified by the reference suite but not yet recorded through the browser, and the invalid-input path still needs a browser pass. |
+| 4. Manual local acceptance | Partially verified | Green, red, and cannot-analyze paths were exercised in the local browser on August 28, 2026; full-page result evidence is versioned in `docs/demo-assets/streamlit-results/`. The invalid-input path still needs a browser pass. |
 | 5. Competition evidence | Pending | Prepare authorized photos, record the two-minute local demo, and state limitations. |
 | 6. Submission check | Pending | Reconcile official rules, attribution, license, repository visibility, and final materials. |
 
@@ -69,7 +69,7 @@ Include the reference photos when checking accuracy, so the suite runs the
 regression gate rather than skipping it:
 
 ```bash
-TENNISPOSE_SAMPLE_DIR=~/Desktop/TennisPose_Test_Images/normal_use_samples \
+TENNISPOSE_SAMPLE_DIR=docs/demo-assets/reference-photos \
   .venv/bin/python -m unittest discover -s tests -v
 ```
 
@@ -85,3 +85,7 @@ Ten authorized reference photos, auto arm detection, 80-120 degree range:
 
 The previous 2D pipeline scored the same four trophy photos at 33-89 degrees and
 reported red for three of them.
+
+The exact source-photo and full-page result pairs used for this record are
+versioned in [`demo-assets/`](demo-assets/README.md), with their attribution and
+licensing terms.

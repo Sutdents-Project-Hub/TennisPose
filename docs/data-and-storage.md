@@ -7,7 +7,7 @@
 | Selected photo | Authorized JPEG or PNG uploaded to the local Streamlit session | Content validation, then in-memory decode, local pose detection, and overlay rendering | None by the application |
 | Pose landmarks | Local MediaPipe result for the current image | In-memory validation and angle calculation | None |
 | Angle and feedback | Pure Python demonstration rule | Visible in the current browser session | None |
-| Demo assets | Team-controlled local photos | Permission review before recording | Do not commit without documented public-use approval |
+| Versioned demo assets | Ten Creative Commons reference photos and their derived Streamlit screenshots | Regression input and documented local-browser evidence | Tracked only in `docs/demo-assets/` with an attribution manifest |
 | PoseLandmarker model | Official model download | Local CPU inference | Ignored local dependency; not user data |
 
 ## Rules
@@ -17,9 +17,12 @@
 - Browser and Streamlit session memory may hold the current uploaded bytes and result only as needed to display the current analysis. Closing or refreshing the session is not a persistence feature.
 - The application rejects non-JPEG/PNG content, files above 10 MB, and images above 20 megapixels before RGB conversion. Those limits reduce accidental or hostile resource exhaustion; they do not create a storage record.
 - `uploads/`, `data/private/`, and `models/` remain ignored defensively. They are not approved storage locations for user data.
-- Do not move test photos, annotated examples, or model binaries into tracked paths.
+- The only approved tracked photo exception is `docs/demo-assets/`: its ten source photos and ten derived screenshots are public documentation assets, not runtime storage. Preserve the source links, author credits, and applicable Creative Commons terms in its manifest.
+- Do not move any other test photos, user uploads, annotated examples, or model binaries into tracked paths.
 - A feature that saves, shares, uploads, synchronizes, or publicly serves a photo requires new consent, retention, deletion, access-control, and backup design.
 
 ## Asset Review
 
-For every demo image, record ownership, subject consent, competition permission, and whether public repository or video use is allowed.
+The versioned asset set is catalogued in [demo-assets/README.md](demo-assets/README.md).
+Before using any additional demo image, record ownership, subject consent,
+competition permission, and whether public repository or video use is allowed.

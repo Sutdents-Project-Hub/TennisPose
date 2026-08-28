@@ -40,8 +40,8 @@ Documentation synchronization is part of done. Update the document that owns any
 
 - Use only team-owned or authorized photos. Do not persist uploaded photo bytes, landmarks, or results.
 - Streamlit's upload object and decoded image data must exist only for the active local session. Do not write them to tracked paths, logs, test fixtures, or caches.
-- Keep downloaded prototype photos and generated annotations in ignored local folders; never commit them. Do not redistribute the MediaPipe model without checking its terms.
-- Do not commit test photos, personal information, API keys, `.env` files, certificates, contracts, or confidential material.
+- Keep downloaded prototype photos and generated annotations in ignored local folders unless they are part of the explicit, licensed documentation asset set in `docs/demo-assets/`. That set must retain its attribution manifest; do not redistribute the MediaPipe model without checking its terms.
+- Do not commit test photos other than the explicitly licensed `docs/demo-assets/` set, personal information, API keys, `.env` files, certificates, contracts, or confidential material.
 - Keep Python versions, dependency constraints, model path, and local-run commands synchronized with `requirements.txt`, implementation, and verified test evidence.
 
 ## Verification Rules

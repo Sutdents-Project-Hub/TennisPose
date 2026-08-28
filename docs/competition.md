@@ -31,11 +31,11 @@ Record the local browser run as the delivered product. Do not portray it as a mo
 
 ## Evidence and Asset Rules
 
-- Use only team-created photos or assets with documented permission for competition and public demonstration.
+- Use only team-created photos, separately authorized assets, or the licensed public reference set documented in [`demo-assets/README.md`](demo-assets/README.md) for competition and public demonstration.
 - Record Python, Streamlit, MediaPipe, model, image, icon, font, and code attribution before submission.
 - Do not include private images, personal data, secrets, contracts, or unlicensed media in the repository or recording.
 - A recorded fallback is allowed only when clearly labelled as recorded evidence, not represented as a live run.
-- Any sample photo used in a public video must have verified permission, required attribution, and a scope-compatible caption. Prefer team-owned or separately authorized images.
+- Any sample photo used in a public video must have verified permission, required attribution, and a scope-compatible caption. The versioned reference photos and annotated results retain their upstream Creative Commons terms; include the matching attribution when used outside this repository.
 
 ## Submission Checklist
 
@@ -43,5 +43,6 @@ Record the local browser run as the delivered product. Do not portray it as a mo
 - [ ] The local Streamlit recording matches the current code and documented scope.
 - [ ] Green, red, invalid-upload, not-a-trophy-position, and cannot-analyze paths are demonstrated.
 - [ ] Python dependencies, the MediaPipe model, and assets have complete attribution and license review.
+- [ ] The specific reference-photo attribution is shown or linked whenever a versioned demo asset appears in a public recording.
 - [ ] Documentation contains no unsupported accuracy, injury, medical, deployment, or competition-compliance claim.
 - [ ] No secrets, private photos, personal data, contracts, or confidential documents are included.

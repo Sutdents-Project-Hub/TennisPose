@@ -91,7 +91,7 @@ with `TENNISPOSE_SAMPLE_DIR`, and it skips cleanly when they or the model are
 absent.
 
 ```bash
-TENNISPOSE_SAMPLE_DIR=~/Desktop/TennisPose_Test_Images/normal_use_samples \
+TENNISPOSE_SAMPLE_DIR=docs/demo-assets/reference-photos \
   .venv/bin/python -m unittest discover -s tests -v
 ```
 
@@ -103,6 +103,15 @@ Before competition submission, manually exercise these local paths in the browse
 - a trophy-position photo outside that range (red);
 - a photo that is not a trophy position at all in auto-detect mode, which must refuse rather than score; and
 - an occluded or unreliable-landmark photo that returns cannot-analyze without a score.
+
+## Demo Assets and Results
+
+The repository includes a licensed, documented ten-photo reference set and the
+corresponding full-page Streamlit results. The input photos are used by the
+accuracy regression suite; the result screenshots are visual evidence for the
+green, red, and cannot-analyze states. See
+[the asset manifest](docs/demo-assets/README.md) for source links, author
+credits, license terms, result summaries, and public-use conditions.
 
 ## Repository Layout
 
@@ -124,6 +133,10 @@ tests/
   reference_expectations.json
 models/                      # ignored local MediaPipe model file
 docs/
+  demo-assets/
+    reference-photos/        # licensed reference inputs used by the regression suite
+    streamlit-results/       # full-page local-browser evidence for the ten inputs
+    README.md                # attribution and result manifest
 ```
 
 ## Documentation
@@ -136,8 +149,13 @@ docs/
 - [Data and storage boundary](docs/data-and-storage.md)
 - [Dependencies](docs/integrations.md)
 - [Security and privacy](docs/security-and-privacy.md)
+- [Demo asset attribution and results](docs/demo-assets/README.md)
 - [Repository working rules](AGENTS.md)
 
 ## License and Attribution
 
-No project license has been selected. Confirm source-code ownership, dependency licenses, model terms, demo-photo consent, asset attribution, and current competition rules before public submission or release.
+No overall project license has been selected. The versioned demo photos and
+derived screenshots retain the upstream Creative Commons terms documented in
+[the asset manifest](docs/demo-assets/README.md). Confirm source-code
+ownership, dependency licenses, model terms, asset attribution, and current
+competition rules before public submission or release.

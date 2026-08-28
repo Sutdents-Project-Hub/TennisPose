@@ -11,7 +11,7 @@ The local Streamlit MVP has no login, payment, database, cloud API, or remote st
 - Keep uploaded image bytes, decoded image data, landmarks, and results in the active local session only.
 - Recheck JPEG/PNG content after upload and reject files above 10 MB or 20 megapixels before full image conversion.
 - Do not transmit photos, landmarks, or results, and do not create analysis history, logs, or saved result files.
-- Do not commit real test photos, screenshots containing personal data, private evaluator notes, downloaded model binaries, device identifiers, or secrets.
+- Do not commit real test photos, screenshots containing personal data, private evaluator notes, downloaded model binaries, device identifiers, or secrets. The only approved exception is the licensed public reference-photo and derived-result set in [`docs/demo-assets/`](demo-assets/README.md); retain its attribution manifest and do not add user uploads to it.
 - Do not create an API key or `.env` requirement for the MVP.
 
 ## Responsible Product Language
