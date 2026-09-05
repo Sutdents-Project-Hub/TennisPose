@@ -18,6 +18,8 @@ quotations/
 
 # Local Python environment and generated artifacts
 .venv/
+.venv-backup*/
+.tennispose-setup.lock
 venv/
 __pycache__/
 .pytest_cache/

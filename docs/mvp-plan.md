@@ -89,3 +89,15 @@ reported red for three of them.
 The exact source-photo and full-page result pairs used for this record are
 versioned in [`demo-assets/`](demo-assets/README.md), with their attribution and
 licensing terms.
+
+### Classroom launchers — September 6, 2026
+
+- Added Windows `start.bat`, executable macOS `start.command`, and shared `scripts/bootstrap.py`; requires preinstalled 64-bit Python 3.11.
+- Fresh Apple Silicon macOS setup passed in an isolated temporary folder whose path contained spaces and Chinese characters: environment creation, binary package installation, official version-1 model download, SHA-256 verification, and model loading.
+- Second setup passed with no package/model download; direct dependency versions, pip compatibility, imports, model checksum and model loading were checked. This was a reuse-path check, not an OS-level network-disconnection test.
+- All 55 tests passed using the freshly installed environment, including six bootstrap safety/reuse tests and full inference over all ten authorized reference photos.
+- Started the actual macOS launcher and confirmed the listener was `127.0.0.1:8501`. Browser checks passed for no upload; Alcaraz green (101 degrees); Mahut red (168 degrees); Ostapenko cannot-analyze with no score; unreadable JPEG rejection; and unsupported text-file rejection. These checks used the new temporary environment, not the pre-existing project environment.
+- Windows launcher received static review only. No Windows runtime, Intel Mac, Finder double-click, or classroom-machine acceptance is claimed. Test those targets before class.
+- Teaching material: `docs/teaching-guide.zh-TW.md`, including a 120-minute lesson, worked exercises, startup recovery and student acceptance checks.
+
+- Ctrl+C stopped the launcher and Streamlit cleanly. MediaPipe background Clearcut uploader failures were observed during the longer browser run; recorded in `security-and-privacy.md`. No zero-network or telemetry-payload claim is made.

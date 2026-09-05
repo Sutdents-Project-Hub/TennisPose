@@ -21,7 +21,7 @@ Exact dependency versions are pinned in `requirements.txt`; update this document
 ## Model Handling
 
 - The heavy PoseLandmarker task file is a local dependency at `models/pose_landmarker_heavy.task`, an ignored path.
-- Download the model manually during setup. Analysis must not download the model automatically or send uploaded images to the internet.
+- The classroom launchers download version 1 of the official heavy model during setup and verify SHA-256 `64437af838a65d18e5ba7a0d39b465540069bc8aae8308de3e318aad31fcbc7b`. Analysis must not download the model automatically or send uploaded images to the internet.
 - Review MediaPipe and model terms before redistribution, public hosting, or packaging.
 - Local landmarks are sensitive to image quality, orientation, occlusion, framing, and model limitations. The application must return cannot-analyze when required points cannot be trusted.
 
@@ -32,3 +32,9 @@ Exact dependency versions are pinned in `requirements.txt`; update this document
 - Pose Landmarker model catalog: https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker
 
 No LLM, remote computer-vision API, analytics SDK, identity provider, payment service, backend service, or API key is part of this MVP. Adding any of these changes privacy, cost, reliability, and competition disclosure requirements.
+
+## Classroom Bootstrap
+
+`start.bat` and `start.command` require preinstalled 64-bit Python 3.11 and share `scripts/bootstrap.py`. Setup creates a project-local `.venv`, installs binary wheels from the existing requirements, verifies imports and local model loading, and launches Streamlit on 127.0.0.1:8501 with usage statistics disabled. Python and OS settings are not modified. Subsequent runs skip pip installation when the requirements fingerprint matches; pip check and model integrity/loading checks still run. `--setup-only` prepares a machine before class; `--repair` reruns pip installation. Incompatible environments and model checksum mismatches are preserved and reported rather than deleted. See README for recovery and platform verification limits.
+
+The current MediaPipe binary showed background Clearcut uploader failures during verification. See the dependency network caveat in `security-and-privacy.md`; local inference and disabled Streamlit usage statistics do not establish zero dependency telemetry.

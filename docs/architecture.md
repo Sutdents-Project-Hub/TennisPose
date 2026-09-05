@@ -98,6 +98,10 @@ angles are mapped to an adjustable inclusive demonstration range that defaults t
 ## Local Processing Boundary
 
 - Image bytes, landmarks, angle, and feedback stay in memory for the active local Streamlit session. JPEG/PNG content is rechecked after upload; the app rejects files above 10 MB or 20 megapixels before RGB conversion.
-- The MediaPipe model is downloaded once to an ignored `models/` path. Loading it is local; inference does not upload a photo or call a remote service.
+- The MediaPipe model is downloaded once to an ignored `models/` path. Model loading and inference are local. Application code does not upload photos; the dependency network caveat in `security-and-privacy.md` records MediaPipe background telemetry messages.
 - The application does not intentionally write uploaded photos, landmark coordinates, or results to disk, logs, databases, or history.
 - Public deployment, result storage, sharing, telemetry, camera input, or video support are separate architecture and privacy changes requiring explicit approval.
+
+## Setup and Launch Boundary
+
+The OS-specific launchers call `scripts/bootstrap.py` before starting the product. It owns local environment creation, dependency installation, a versioned official model download with SHA-256 verification and atomic promotion, and startup checks. An exclusive temporary lock prevents simultaneous setup writes. It handles no uploaded photo or landmark data. The launch command binds Streamlit to `127.0.0.1:8501` and disables usage statistics; it does not publish a service. Package fingerprints reside inside ignored `.venv/`, models inside ignored `models/`, and the ignored setup lock is removed on ordinary completion or error.

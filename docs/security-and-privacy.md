@@ -23,3 +23,11 @@ The local Streamlit MVP has no login, payment, database, cloud API, or remote st
 ## Scope-Change Trigger
 
 Public deployment, cloud upload, result history, sharing, sign-in, telemetry, camera input, or video processing moves the project into a higher-risk state. Before such work, define consent, access control, retention, deletion, incident response, and deployment ownership.
+
+## Classroom Launchers
+
+First-time setup downloads packages and the official versioned model over HTTPS; it does not send photos. The model must match the pinned SHA-256 before use. The launchers preserve existing incompatible environments and unrecognized models, make no system-level changes, and start the interface on loopback only with Streamlit usage statistics disabled. Existing photo handling rules are unchanged. See README for interrupted-setup recovery; never disable certificate verification to work around a download error.
+
+## Dependency Network Caveat
+
+On September 6, 2026, the existing MediaPipe 0.10.35 binary emitted `portable_clearcut_uploader.cc` / `Failed to send to clearcut` messages during the browser verification run. This is evidence of a dependency background telemetry component; it is not evidence that uploaded photos were sent, nor a packet capture confirming its payload or successful transmission. Streamlit usage statistics are disabled by the launcher, but that switch does not disable MediaPipe internals. The same issue is recorded upstream at https://github.com/google-ai-edge/mediapipe/issues/6291. Do not describe this package combination as proven to make zero network attempts. Use the licensed reference set for class; stricter offline/privacy acceptance requires a separate dependency/network audit. No dependency version was changed in this launcher task.
