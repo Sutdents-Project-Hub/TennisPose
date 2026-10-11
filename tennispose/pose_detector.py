@@ -13,7 +13,7 @@ traced back to a landmark:
 from __future__ import annotations
 
 import threading
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Literal, Sequence
 
@@ -44,7 +44,9 @@ from tennispose.pose_math import (
     calculate_elbow_angle_3d,
     has_reliable_point,
     is_in_preparation_position,
+    MIN_TOSS_WRIST_RISE,
     pool_angles,
+    torso_up_axis,
 )
 
 
@@ -61,9 +63,6 @@ LEFT_ARM_INDICES = (11, 13, 15)
 RIGHT_ARM_INDICES = (12, 14, 16)
 LEFT_SHOULDER, RIGHT_SHOULDER = 11, 12
 LEFT_HIP, RIGHT_HIP = 23, 24
-
-# Landmark indices swap sides when the photo is mirrored for an extra pass.
-_MIRRORED_INDEX = {11: 12, 12: 11, 13: 14, 14: 13, 15: 16, 16: 15, 23: 24, 24: 23}
 
 ArmChoice = Literal["auto", "left", "right"]
 Status = Literal["analyzed", "cannot_analyze"]
@@ -104,6 +103,9 @@ class AnalysisReport:
     projected_angle_degrees: float | None = None
     arm_was_detected: bool = False
     reason_code: str = ""
+    minimum_angle_degrees: float | None = None
+    maximum_angle_degrees: float | None = None
+    attempted_passes: int = 0
 
 
 _detector_lock = threading.Lock()
@@ -157,16 +159,15 @@ def analyze_rgb_image(
     """Analyze one RGB photo locally and return an RGB annotation and report.
 
     ``arm`` may be ``"auto"`` to infer the racket arm, or an explicit side. An
-    explicit side is honored even when the pose gate is unhappy, in which case
-    the caution travels back in the report rather than blocking the reading.
+    explicit side overrides arm identification, never reliability or phase gates.
 
     Photo bytes, landmarks, and the result stay in process memory for this call.
     """
 
     if not 0 <= minimum_visibility <= 1:
         raise ValueError("minimum_visibility must be between 0 and 1")
-    if demo_minimum > demo_maximum:
-        raise ValueError("demo_minimum cannot be greater than demo_maximum")
+    if not (0 <= demo_minimum <= demo_maximum <= 180):
+        raise ValueError("demo range must be finite, ordered, and within 0 to 180")
     if arm not in ("auto", "left", "right"):
         raise ValueError("arm must be 'auto', 'left', or 'right'")
     if image_rgb.ndim != 3 or image_rgb.shape[2] != 3:
@@ -187,6 +188,9 @@ def analyze_rgb_image(
         )
 
     landmarks, world_landmarks = primary
+    if len(landmarks) != 33 or len(world_landmarks) != 33:
+        return _cannot_analyze(canvas, None, "The detector returned incomplete landmarks.",
+                               "invalid_landmarks", hint="Try another clear photo.")
     draw_skeleton(canvas, landmarks)
 
     height, width = image_rgb.shape[:2]
@@ -207,9 +211,10 @@ def analyze_rgb_image(
             hint="Fill more of the frame with the player, from head to hips.",
         )
 
+    up = torso_up_axis(landmarks, width, height)
     observations = {
         side: _observe_arm(
-            side, landmarks, world_landmarks, scale, width, height, minimum_visibility
+            side, landmarks, world_landmarks, scale, width, height, minimum_visibility, up
         )
         for side in ("left", "right")
     }
@@ -226,7 +231,9 @@ def analyze_rgb_image(
 
     chosen = observations[selection.arm]
     angles = _collect_angles(
-        detector, image_rgb, selection.arm, chosen.angle_3d, stability_passes
+        detector, image_rgb, selection.arm, chosen.angle_3d, stability_passes,
+        minimum_visibility=minimum_visibility,
+        primary_landmarks=landmarks,
     )
     pooled = pool_angles(angles, demo_minimum, demo_maximum)
     if pooled is None:
@@ -245,11 +252,23 @@ def analyze_rgb_image(
             "The measurement was not stable enough to report a result.",
             "unstable",
             hint=(
-                f"Repeat readings disagreed by {pooled.spread_degrees:.0f} degrees "
-                "with no majority. A sharper, brighter, side-on photo gives a "
+                f"{pooled.sample_count} valid passes survived; their full spread was "
+                f"{pooled.spread_degrees:.1f} degrees. At least three passes and a "
+                "spread of at most 20 degrees are required. A clear side-on photo gives a "
                 "steadier estimate."
             ),
         )
+
+    if not pooled.verdict_consistent:
+        return _cannot_analyze(
+            canvas, selection.arm,
+            "The repeat readings cross a target boundary; no red/green verdict is supported.",
+            "borderline", hint="Try a clearer view or review the chosen target range.",
+        )
+
+    # Missing passes reduce support even when the survivors happen to agree.
+    if pooled.sample_count < 5 and pooled.confidence == "high":
+        pooled = replace(pooled, confidence="moderate")
 
     return _analyzed(
         canvas,
@@ -257,8 +276,8 @@ def analyze_rgb_image(
         pooled,
         demo_minimum,
         demo_maximum,
-        caution=selection.caution,
         arm_was_detected=selection.arm_was_detected,
+        attempted_passes=5 if stability_passes else 1,
     )
 
 
@@ -272,7 +291,6 @@ class _Selection:
     arm: Arm = "right"
     arm_was_detected: bool = False
     report: AnalysisReport | None = None
-    caution: str = ""
     hint: str = ""
 
 
@@ -307,15 +325,20 @@ def _select_arm(
                     "invalid_geometry",
                 ),
             )
-        caution = (
-            ""
-            if chosen.in_preparation
-            else (
-                "This arm is not raised into a trophy position, so the reading "
-                "describes a different moment of the serve."
-            )
-        )
-        return _Selection(arm=requested, caution=caution)
+        other = observations["left" if requested == "right" else "right"]
+        if not other.reliable:
+            return _Selection(report=_reason(requested,
+                "The opposite arm is hidden, so the serve preparation cannot be verified.",
+                "ambiguous_arm"), hint="Use a photo showing both arms.")
+        if not _is_trophy_candidate(chosen, other):
+            return _not_trophy(requested)
+        if _is_trophy_candidate(other, chosen) and (
+            other.angle_3d is None or chosen.angle_3d > other.angle_3d - 20
+        ):
+            return _Selection(report=_reason(requested,
+                "The selected arm cannot be distinguished from the tossing arm.",
+                "ambiguous_arm"), hint="Select the racket arm or use a clearer side view.")
+        return _Selection(arm=requested)
 
     reliable = {side: item for side, item in observations.items() if item.reliable}
     if not reliable:
@@ -328,45 +351,47 @@ def _select_arm(
             hint="Use a brighter, sharper photo with both arms unobstructed.",
         )
 
+    if len(reliable) == 1:
+        return _Selection(report=_reason(None,
+            "Both arms must be visible to verify the serve preparation.", "ambiguous_arm"),
+            hint="Use a photo showing both the racket arm and tossing arm.")
+
     candidates = {
         side: item
         for side, item in reliable.items()
-        if item.in_preparation and item.angle_3d is not None
+        if _is_trophy_candidate(item, observations["left" if side == "right" else "right"])
     }
     if not candidates:
-        return _Selection(
-            report=_reason(
-                None,
-                "This photo does not show a serve trophy position.",
-                "not_trophy_pose",
-            ),
-            hint=(
-                "At the trophy position the racket hand is up near shoulder height "
-                "with the elbow bent. A ready stance, a contact frame, or a "
-                "follow-through cannot be scored against that checkpoint."
-            ),
-        )
-
-    # Only one arm is usable while the other was hidden rather than lowered:
-    # the racket could be in either hand, so guessing would be dishonest.
-    if len(candidates) == 1 and len(reliable) == 1:
-        hidden = "left" if "right" in reliable else "right"
-        return _Selection(
-            report=_reason(
-                None,
-                "The racket arm could not be identified in this photo.",
-                "ambiguous_arm",
-            ),
-            hint=(
-                f"The {hidden} arm is hidden, so it is unclear which hand holds the "
-                "racket. Use a photo showing both arms, or pick the arm manually."
-            ),
-        )
+        return _not_trophy(None)
 
     # The tossing arm is the straighter one, so the most bent candidate is the
     # arm holding the racket.
     chosen = min(candidates.values(), key=lambda item: item.angle_3d)
+    if len(candidates) == 2 and abs(observations["left"].angle_3d - observations["right"].angle_3d) < 20:
+        return _Selection(report=_reason(None,
+            "The two arms are too similar to identify the racket arm reliably.", "ambiguous_arm"),
+            hint="Use a clearer side view or select the racket arm.")
     return _Selection(arm=chosen.arm, arm_was_detected=True)
+
+
+def _is_trophy_candidate(chosen: ArmObservation, other: ArmObservation) -> bool:
+    """Use phase cues independent of the configurable elbow feedback interval.
+
+    A near-shoulder racket arm with an ascending forearm, plus an elevated
+    opposite hand, supports preparation. This cannot establish a temporal TP
+    event, racket location, or the correctness of the entire serve.
+    """
+    return (chosen.reliable and other.reliable and chosen.angle_3d is not None
+            and other.angle_3d is not None and chosen.in_preparation
+            and other.geometry.wrist_rise >= MIN_TOSS_WRIST_RISE
+            and other.geometry.elbow_rise >= -0.10)
+
+
+def _not_trophy(arm: Arm | None) -> _Selection:
+    return _Selection(report=_reason(arm,
+        "This photo does not provide clear trophy-position preparation cues.", "not_trophy_pose"),
+        hint="Show the racket forearm rising near the shoulder and the opposite hand raised. "
+             "Ready stance, contact, and follow-through frames cannot be scored here.")
 
 
 def _reason(arm: Arm | None, message: str, reason_code: str) -> AnalysisReport:
@@ -391,6 +416,7 @@ def _observe_arm(
     width: int,
     height: int,
     minimum_visibility: float,
+    up: tuple[float, float] = (0.0, -1.0),
 ) -> ArmObservation:
     """Measure one arm's visibility, raised-ness, and elbow angle in one pass."""
 
@@ -398,10 +424,19 @@ def _observe_arm(
     shoulder, elbow, wrist = (landmarks[index] for index in indices)
     world = tuple(world_landmarks[index] for index in indices)
 
-    geometry = arm_geometry(shoulder, elbow, wrist, scale, height)
+    geometry = arm_geometry(shoulder, elbow, wrist, scale, height, width=width, up=up)
     reliable = all(
         has_reliable_point(point, minimum_visibility) for point in (shoulder, elbow, wrist)
     )
+    reliable = reliable and all(
+        np.isfinite((point.x, point.y, point.z, point.visibility, point.presence)).all()
+        and minimum_visibility <= point.visibility <= 1 and 0.5 <= point.presence <= 1
+        for point in world
+    )
+    lengths = [np.linalg.norm(np.array((p.x - world[1].x, p.y - world[1].y, p.z - world[1].z)))
+               for p in (world[0], world[2])]
+    reliable = reliable and all(0.05 <= length <= 0.8 for length in lengths)
+    reliable = reliable and 0.5 <= lengths[0] / max(lengths[1], 1e-9) <= 2.0
     return ArmObservation(
         arm=arm,
         shoulder=shoulder,
@@ -409,7 +444,7 @@ def _observe_arm(
         wrist=wrist,
         geometry=geometry,
         angle_3d=calculate_elbow_angle_3d(*world),
-        angle_2d=calculate_elbow_angle(shoulder, elbow, wrist),
+        angle_2d=calculate_elbow_angle(shoulder, elbow, wrist, width=width, height=height),
         minimum_visibility=min(
             shoulder.visibility, elbow.visibility, wrist.visibility
         ),
@@ -424,12 +459,13 @@ def _collect_angles(
     arm: Arm,
     primary_angle: float | None,
     stability_passes: bool,
+    *, minimum_visibility: float = DEFAULT_MINIMUM_VISIBILITY,
+    primary_landmarks: Sequence[Point],
 ) -> list[float]:
     """Measure the same elbow across cheap image variants to expose instability.
 
-    A single inference can be confidently wrong on a dark or unusual photo. A
-    downscaled pass and a mirrored pass cost about thirty milliseconds each and
-    turn that silent failure into a visible disagreement.
+    Each variant must support the same arm, preparation cues and valid geometry.
+    Agreement can reveal instability; it cannot establish absolute accuracy.
     """
 
     angles: list[float] = []
@@ -439,29 +475,89 @@ def _collect_angles(
         return angles
 
     height, width = image_rgb.shape[:2]
-    indices = LEFT_ARM_INDICES if arm == "left" else RIGHT_ARM_INDICES
-    variants: list[tuple[np.ndarray, bool]] = [
+    scaled_width, scaled_height = max(64, round(width * .75)), max(64, round(height * .75))
+    variants: list[tuple[np.ndarray, bool, np.ndarray]] = [
         (
             cv2.resize(
                 image_rgb,
-                (max(64, round(width * 0.75)), max(64, round(height * 0.75))),
+                (scaled_width, scaled_height),
                 interpolation=cv2.INTER_AREA,
             ),
             False,
+            np.array([[scaled_width / width, 0, 0], [0, scaled_height / height, 0]], dtype=float),
         ),
-        (np.ascontiguousarray(image_rgb[:, ::-1]), True),
+        (np.ascontiguousarray(image_rgb[:, ::-1]), True,
+         np.array([[-1, 0, width - 1], [0, 1, 0]], dtype=float)),
     ]
+    for degrees in (-8, 8):
+        transform = cv2.getRotationMatrix2D((width / 2, height / 2), degrees, 1)
+        variants.append((cv2.warpAffine(
+            image_rgb, transform,
+            (width, height), borderMode=cv2.BORDER_REFLECT_101,
+        ), False, transform))
 
-    for variant, mirrored in variants:
+    for variant, mirrored, transform in variants:
         detected = _detect(detector, variant)
         if detected is None:
             continue
-        _, world_landmarks = detected
-        lookup = tuple(_MIRRORED_INDEX[index] for index in indices) if mirrored else indices
-        angle = calculate_elbow_angle_3d(*(world_landmarks[index] for index in lookup))
-        if angle is not None:
-            angles.append(angle)
+        landmarks, world_landmarks = detected
+        if len(landmarks) != 33 or len(world_landmarks) != 33:
+            continue
+        vh, vw = variant.shape[:2]
+        scale = body_scale(*(landmarks[i] for i in (11, 12, 23, 24)), vw, vh)
+        if scale is None:
+            continue
+        up = torso_up_axis(landmarks, vw, vh)
+        observations = {side: _observe_arm(side, landmarks, world_landmarks, scale,
+                                         vw, vh, minimum_visibility, up)
+                        for side in ("left", "right")}
+        variant_arm = ("left" if arm == "right" else "right") if mirrored else arm
+        selection = _select_arm(variant_arm, observations)
+        if selection.report is None:
+            canonical = _restore_landmarks(landmarks, transform, (vw, vh), (width, height), mirrored)
+            if _same_subject_arm(primary_landmarks, canonical, arm, width, height):
+                angles.append(observations[variant_arm].angle_3d)
     return angles
+
+
+def _restore_landmarks(
+    landmarks: Sequence[Point], transform: np.ndarray,
+    variant_size: tuple[int, int], original_size: tuple[int, int], mirrored: bool,
+) -> list[Point]:
+    """Undo the image affine and anatomical index swap before association."""
+    vw, vh = variant_size
+    width, height = original_size
+    inverse = cv2.invertAffineTransform(transform)
+    swap = {11: 12, 12: 11, 13: 14, 14: 13, 15: 16, 16: 15, 23: 24, 24: 23}
+    result = []
+    for i in range(33):
+        point = landmarks[swap.get(i, i) if mirrored else i]
+        x, y = inverse @ np.array([point.x * vw, point.y * vh, 1.0])
+        result.append(replace(point, x=float(x / width), y=float(y / height)))
+    return result
+
+
+def _same_subject_arm(
+    primary: Sequence[Point], repeated: Sequence[Point], arm: Arm, width: int, height: int
+) -> bool:
+    """Reject another person or a side swap instead of pooling a different elbow.
+
+    These are conservative association tolerances, not identity recognition.
+    """
+    scale = body_scale(*(primary[i] for i in (11, 12, 23, 24)), width, height)
+    repeated_scale = body_scale(*(repeated[i] for i in (11, 12, 23, 24)), width, height)
+    if scale is None or repeated_scale is None or not .7 <= repeated_scale / scale <= 1.4:
+        return False
+    indices = LEFT_ARM_INDICES if arm == "left" else RIGHT_ARM_INDICES
+    # Shoulders define location even when the hips are cropped/occluded.
+    for i in (11, 12, *indices):
+        if not has_reliable_point(repeated[i], .2):
+            return False
+        distance = np.hypot((primary[i].x - repeated[i].x) * width,
+                            (primary[i].y - repeated[i].y) * height)
+        if distance > (.25 if i in (11, 12) else .45) * scale:
+            return False
+    return True
 
 
 def _detect(
@@ -484,11 +580,14 @@ def _detect(
                 x=float(item.x),
                 y=float(item.y),
                 visibility=float(getattr(item, "visibility", 0.0)),
+                presence=float(getattr(item, "presence", 0.0)),
             )
             for item in result.pose_landmarks[0]
         ],
         [
-            Point3(x=float(item.x), y=float(item.y), z=float(item.z))
+            Point3(x=float(item.x), y=float(item.y), z=float(item.z),
+                   visibility=float(getattr(item, "visibility", 0.0)),
+                   presence=float(getattr(item, "presence", 0.0)))
             for item in result.pose_world_landmarks[0]
         ],
     )
@@ -504,19 +603,19 @@ def _analyzed(
     demo_minimum: float,
     demo_maximum: float,
     *,
-    caution: str,
     arm_was_detected: bool,
+    attempted_passes: int,
 ) -> tuple[np.ndarray, AnalysisReport]:
     """Draw and describe a completed measurement."""
 
     color = GREEN if pooled.in_demo_range else RED
     verdict = "GREEN - in range" if pooled.in_demo_range else "RED - adjust"
     if pooled.in_demo_range:
-        message = "Elbow bend matches the trophy-position range"
+        message = "Elbow estimate is within the selected range"
     elif pooled.degrees < demo_minimum:
-        message = "Elbow is more bent than the trophy-position range"
+        message = "Elbow estimate is below the selected range (more bent)"
     else:
-        message = "Elbow is straighter than the trophy-position range"
+        message = "Elbow estimate is above the selected range (straighter)"
 
     draw_measured_arm(
         canvas,
@@ -529,10 +628,8 @@ def _analyzed(
     details = [
         f"{observation.arm.title()} elbow {pooled.degrees:.0f} deg"
         f"  |  target {demo_minimum:.0f}-{demo_maximum:.0f} deg",
-        f"{message}  |  confidence {pooled.confidence}",
+        f"{message}  |  repeat agreement {pooled.confidence}",
     ]
-    if caution:
-        details.append("Note: arm is not in a trophy position")
     draw_banner(canvas, f"TennisPose  {verdict}", details, color)
 
     return cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB), AnalysisReport(
@@ -540,7 +637,7 @@ def _analyzed(
         arm=observation.arm,
         angle_degrees=round(pooled.degrees, 1),
         in_demo_range=pooled.in_demo_range,
-        message=f"{message}. {caution}".strip(),
+        message=f"{message}.",
         confidence=pooled.confidence,
         spread_degrees=round(pooled.spread_degrees, 1),
         sample_count=pooled.sample_count,
@@ -548,6 +645,9 @@ def _analyzed(
             round(observation.angle_2d, 1) if observation.angle_2d is not None else None
         ),
         arm_was_detected=arm_was_detected,
+        minimum_angle_degrees=round(pooled.minimum_degrees, 1),
+        maximum_angle_degrees=round(pooled.maximum_degrees, 1),
+        attempted_passes=attempted_passes,
     )
 
 

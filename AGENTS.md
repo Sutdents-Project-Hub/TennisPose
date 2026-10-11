@@ -19,7 +19,8 @@ The delivered product runs locally from `streamlit_app.py`. It has no backend, d
 
 - Analyze one still image, one Trophy Pose, and one racket arm — detected automatically, overridable by the user.
 - The adjustable 80–120 degree inclusive interval is demonstration logic, not coaching, medical, or injury-prevention validation.
-- Measure the elbow angle from MediaPipe `pose_world_landmarks`. The flat 2D projection understates a foreshortened arm by up to 60 degrees and must never decide a verdict.
+- Measure the elbow angle from estimated MediaPipe `pose_world_landmarks`. The pixel-aspect-correct 2D projection must never decide a verdict; monocular world coordinates are estimates, not motion-capture ground truth.
+- Automatic and manual selection both require preparation cues independent of the target angle interval. Each repeat must validate landmarks, phase and association with the primary arm. Require at least three valid readings, a full spread of at most 20 degrees, and no target-boundary crossing; report repeat agreement rather than calibrated accuracy.
 - Prefer refusing with a reason code over reporting a number the pipeline cannot stand behind.
 - Missing, unreliable, non-finite, or degenerate shoulder/elbow/wrist landmarks mean `cannot analyze`; never generate a score from incomplete data.
 - Do not add live video, continuous tracking, full-swing scoring, injury claims, accounts, sharing, payments, or social features.

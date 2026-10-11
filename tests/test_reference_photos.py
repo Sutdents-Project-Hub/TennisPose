@@ -1,8 +1,7 @@
 """Regression suite over the authorized reference serve photos.
 
-The expectations in ``reference_expectations.json`` were established by
-inspecting each photo, so this suite is what stops a tuning change from quietly
-regressing accuracy. It skips when the photos or the model are unavailable.
+The phase/arm labels come from visual inspection. Numeric expectations are
+model-output regression snapshots, not measured 3D ground truth.
 """
 
 from __future__ import annotations
@@ -24,7 +23,7 @@ EXPECTATIONS = json.loads(
 SAMPLE_DIR = Path(
     os.environ.get(
         "TENNISPOSE_SAMPLE_DIR",
-        Path.home() / "Desktop" / "TennisPose_Test_Images" / "normal_use_samples",
+        Path(__file__).resolve().parent.parent / "docs" / "demo-assets" / "reference-photos",
     )
 )
 
@@ -67,11 +66,11 @@ class ReferencePhotoTests(unittest.TestCase):
                     msg=f"{case['file']} elbow angle drifted beyond {tolerance} degrees",
                 )
 
-    def test_every_elite_trophy_photo_passes(self) -> None:
-        """The four genuine trophy positions are the demo's green examples."""
+    def test_supported_trophy_photos_pass_and_uncertain_one_is_refused(self) -> None:
+        """A genuine trophy photo is refused when its 3D estimates conflict."""
 
         green = [case for case in EXPECTATIONS["cases"] if case.get("in_demo_range")]
-        self.assertEqual(len(green), 4)
+        self.assertEqual(len(green), 3)
         for case in green:
             path = SAMPLE_DIR / case["file"]
             with self.subTest(photo=case["file"]):
@@ -79,6 +78,20 @@ class ReferencePhotoTests(unittest.TestCase):
                     self.skipTest(f"{path} is not available")
                 _, report = analyze_rgb_image(load_photo(path), "auto")
                 self.assertTrue(report.in_demo_range)
+
+    def test_wrong_phase_frames_refuse_with_wide_target_and_manual_arms(self) -> None:
+        for filename in ("01_dominic_pagon.jpg", "05_gokberk_ergeneman.jpg",
+                         "06_nicolas_mahut.jpg", "10_sharapova_serve.jpg"):
+            path = SAMPLE_DIR / filename
+            if not path.is_file():
+                self.skipTest(f"{path} is not available")
+            for arm in ("auto", "left", "right"):
+                with self.subTest(photo=filename, arm=arm):
+                    _, report = analyze_rgb_image(load_photo(path), arm,
+                                                  demo_minimum=40, demo_maximum=180)
+                    self.assertEqual(report.status, "cannot_analyze")
+                    self.assertIsNone(report.angle_degrees)
+                    self.assertIsNone(report.in_demo_range)
 
 
 if __name__ == "__main__":

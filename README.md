@@ -1,4 +1,4 @@
-# TennisPose - AI Tennis Trophy Pose Coach
+# TennisPose - Trophy Pose Elbow Analysis
 
 > Stage: competition MVP | Product: local Streamlit web application | Deployment: none
 
@@ -8,30 +8,32 @@ It is deliberately a single-photo learning aid. It is not a live-video coach, fu
 
 ## How the Measurement Works
 
-The accuracy of this app rests on three decisions, each of which is testable:
+The pipeline checks three separate questions before displaying a verdict:
 
-1. **The angle is measured in 3D, not on the flat image.** MediaPipe returns both
-   normalized image landmarks and metric `pose_world_landmarks`. A serve puts the
-   racket arm at a steep angle to the camera, so the flat 2D projection
-   understates the bend badly — on the reference photos it read 33° where the arm
-   was actually near 83°, and 43° where it was near 101°. Every verdict uses the
-   3D landmarks; the 2D value is shown only for comparison.
-2. **The racket arm is detected, not guessed.** At the trophy position the tossing
-   arm is nearly straight and high while the racket arm is folded to roughly a
-   right angle near shoulder height. Auto-detect measures the more bent of the
-   arms that are both visible and already raised, which finds a left-handed
-   server's arm as readily as a right-handed one. The choice can be overridden.
-3. **The same photo is measured three times.** The original, a downscaled copy,
-   and a mirrored copy each produce an angle; the reported value is their median
-   and the disagreement between them is reported as confidence. A single
-   inference pass can be confidently wrong on a dark or unusual photo — pooling
-   turns that silent failure into either a corrected value or a visible caution.
+1. **Is this a supported preparation view?** Torso-normalized racket-wrist and
+   elbow positions, together with an elevated opposite hand, support a
+   preparation-like pose. The gate is independent of the target elbow range.
+   Both automatic and manual arm selection must pass it.
+2. **Can the same arm be measured reliably?** Each of five passes (original,
+   downscaled, mirrored, and rotations of -8/+8 degrees) rechecks image/world
+   landmark visibility, presence, finite coordinates, segment geometry and
+   preparation cues. Inverse image transforms verify that repeats still refer
+   to the original person's arm. Missing/invalid readings never enter the pool.
+3. **Do the valid estimates support one verdict?** At least three valid passes,
+   a full spread of at most 20 degrees, and no target-boundary crossing are
+   required. The median is reported alongside the actual observed minimum and
+   maximum. A single reading or an agreeing majority cannot hide a reliable
+   conflicting reading.
 
-The app refuses rather than guesses in auto-detect mode. A ready stance, a
-contact frame, a follow-through, a hidden racket arm, a player too small in the
-frame, or three passes that cannot agree return cannot-analyze with a specific
-reason, never a score. A manual left/right override instead honors a clearly
-visible selected arm and labels a non-trophy reading with a caution.
+The angle uses **estimated** MediaPipe 3D world landmarks. These account for
+inferred depth, but are not motion-capture ground truth. The pixel-aspect-correct
+2D angle is a comparison only. Repeat agreement is not an accuracy probability
+or a calibrated confidence interval. A genuine Trophy photo may be refused
+when the model's estimates disagree.
+
+Green/red describes the elbow estimate relative to the selected demonstration
+interval; it does not certify the entire serve. See [research and current
+validation](docs/validation.md) for evidence, thresholds and limits.
 
 ## MVP Scope
 
@@ -40,9 +42,9 @@ visible selected arm and labels a non-trophy reading with a caution.
 - Automatic racket-arm detection, with a manual left/right override.
 - Local CPU inference with MediaPipe PoseLandmarker, loaded once per process.
 - Shoulder, elbow, and wrist reliability checks before any angle is shown.
-- An auto-detect trophy-position gate that rejects photos showing a different moment of the serve; a manual arm override preserves a visible-arm reading with a caution.
-- Three-point elbow-angle geometry from 3D world landmarks, pooled over three passes.
-- Inclusive, adjustable 80–120 degree demonstration feedback with a reported confidence.
+- A preparation gate for both automatic and manual selection; insufficient stage cues produce a refusal.
+- Three-point elbow-angle geometry from 3D world landmarks, pooled over five validated passes.
+- Inclusive, adjustable 80–120 degree demonstration feedback with observed bounds and repeat agreement.
 - Annotated in-range (green), adjustment (red), or cannot-analyze result.
 - No account, backend, database, cloud upload, remote AI, API key, saved history, camera, or video.
 
@@ -148,10 +150,9 @@ Open the local URL shown by Streamlit and upload a photo you own or are authoriz
 
 `tests/test_reference_photos.py` replays ten authorized reference serve photos
 through the full pipeline and asserts the arm chosen, the verdict, and the angle
-against `tests/reference_expectations.json`. It is the regression gate for
-accuracy: change a threshold and it tells you what moved. Point it at the photos
-with `TENNISPOSE_SAMPLE_DIR`, and it skips cleanly when they or the model are
-absent.
+against `tests/reference_expectations.json`. These are model-output regression snapshots, not real 3D angle labels. The
+licensed repository folder is the default; `TENNISPOSE_SAMPLE_DIR` can override
+it. Missing photos/model are reported as skipped checks, not passes.
 
 ```bash
 TENNISPOSE_SAMPLE_DIR=docs/demo-assets/reference-photos \
@@ -164,15 +165,15 @@ Before competition submission, manually exercise these local paths in the browse
 - unsupported or unreadable input;
 - a trophy-position photo that lands in the configured range (green);
 - a trophy-position photo outside that range (red);
-- a photo that is not a trophy position at all in auto-detect mode, which must refuse rather than score; and
+- a photo that does not support preparation cues in both automatic and manual modes, which must refuse rather than score; and
 - an occluded or unreliable-landmark photo that returns cannot-analyze without a score.
 
 ## Demo Assets and Results
 
 The repository includes a licensed, documented ten-photo reference set and the
 corresponding full-page Streamlit results. The input photos are used by the
-accuracy regression suite; the result screenshots are visual evidence for the
-green, red, and cannot-analyze states. See
+regression suite. Existing screenshots are historical August 2026 evidence;
+they do not represent the revised October quality gates. See
 [the asset manifest](docs/demo-assets/README.md) for source links, author
 credits, license terms, result summaries, and public-use conditions.
 
@@ -192,8 +193,9 @@ tennispose/
 tests/
   test_pose_math.py          # geometry, gating, and pooling
   test_arm_selection.py      # racket-arm detection and refusal reasons
+  test_quality_guards.py     # repeat reliability, association and boundary guards
   test_analysis_pipeline.py  # entry-point guards and empty-photo behavior
-  test_reference_photos.py   # accuracy regression over authorized photos
+  test_reference_photos.py   # output regression over authorized photos
   test_image_input.py        # upload validation
   reference_expectations.json
 models/                      # ignored local MediaPipe model file
@@ -209,6 +211,7 @@ docs/
 - [Project profile](docs/project-profile.md)
 - [Product requirements](docs/project-overview.md)
 - [Solution architecture](docs/architecture.md)
+- [Research and validation](docs/validation.md)
 - [MVP roadmap and test plan](docs/mvp-plan.md)
 - [Competition plan](docs/competition.md)
 - [Data and storage boundary](docs/data-and-storage.md)

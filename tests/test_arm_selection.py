@@ -79,8 +79,8 @@ class AutoSelectionTests(unittest.TestCase):
         self.assertIsNotNone(selection.report)
         self.assertEqual(selection.report.reason_code, "not_trophy_pose")
 
-    def test_lowered_arm_is_skipped_rather_than_measured(self) -> None:
-        """Mahut at contact: the bent arm has swung down, so measure the raised one."""
+    def test_contact_frame_is_refused(self) -> None:
+        """Mahut at contact: a lowered toss arm cannot support preparation."""
 
         selection = _select_arm(
             "auto",
@@ -90,7 +90,7 @@ class AutoSelectionTests(unittest.TestCase):
             },
         )
 
-        self.assertEqual(selection.arm, "right")
+        self.assertEqual(selection.report.reason_code, "not_trophy_pose")
 
     def test_hidden_racket_arm_is_ambiguous_rather_than_guessed(self) -> None:
         """Ostapenko from behind: only the tossing arm is visible, so refuse."""
@@ -125,7 +125,7 @@ class AutoSelectionTests(unittest.TestCase):
 
 
 class ManualSelectionTests(unittest.TestCase):
-    def test_explicit_choice_overrides_auto_detection(self) -> None:
+    def test_explicit_choice_still_requires_preparation(self) -> None:
         selection = _select_arm(
             "left",
             {
@@ -134,11 +134,9 @@ class ManualSelectionTests(unittest.TestCase):
             },
         )
 
-        self.assertEqual(selection.arm, "left")
-        self.assertFalse(selection.arm_was_detected)
-        self.assertEqual(selection.caution, "")
+        self.assertEqual(selection.report.reason_code, "not_trophy_pose")
 
-    def test_explicit_choice_of_a_lowered_arm_is_measured_with_a_caution(self) -> None:
+    def test_explicit_choice_of_a_lowered_arm_is_refused(self) -> None:
         selection = _select_arm(
             "left",
             {
@@ -147,9 +145,7 @@ class ManualSelectionTests(unittest.TestCase):
             },
         )
 
-        self.assertIsNone(selection.report)
-        self.assertEqual(selection.arm, "left")
-        self.assertIn("not raised", selection.caution)
+        self.assertEqual(selection.report.reason_code, "not_trophy_pose")
 
     def test_explicit_choice_of_a_hidden_arm_is_refused(self) -> None:
         selection = _select_arm(

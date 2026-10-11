@@ -12,7 +12,7 @@ from typing import Sequence
 import cv2
 import numpy as np
 
-from tennispose.pose_math import Point
+from tennispose.pose_math import Point, has_reliable_point
 
 
 GREEN = (96, 174, 39)
@@ -57,7 +57,7 @@ def draw_skeleton(image_bgr: np.ndarray, landmarks: Sequence[Point]) -> None:
         if start >= len(landmarks) or end >= len(landmarks):
             continue
         first, second = landmarks[start], landmarks[end]
-        if first.visibility < 0.2 or second.visibility < 0.2:
+        if not has_reliable_point(first, 0.2) or not has_reliable_point(second, 0.2):
             continue
         cv2.line(
             image_bgr,
@@ -69,7 +69,7 @@ def draw_skeleton(image_bgr: np.ndarray, landmarks: Sequence[Point]) -> None:
         )
 
     for landmark in landmarks:
-        if landmark.visibility >= 0.2:
+        if has_reliable_point(landmark, 0.2):
             cv2.circle(
                 image_bgr,
                 pixel_point(landmark, width, height),

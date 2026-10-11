@@ -53,7 +53,7 @@ def render_verdict(report: AnalysisReport, minimum: float, maximum: float) -> No
     """Show the headline result: one angle, one colour, one sentence."""
 
     angle_column, status_column, range_column = st.columns(3)
-    angle_column.metric("Elbow angle", f"{report.angle_degrees:.0f}°")
+    angle_column.metric("Estimated elbow angle", f"{report.angle_degrees:.1f}°")
     range_column.metric("Target range", f"{minimum:.0f}°–{maximum:.0f}°")
 
     if report.in_demo_range:
@@ -65,9 +65,10 @@ def render_verdict(report: AnalysisReport, minimum: float, maximum: float) -> No
 
     if report.confidence == "moderate":
         st.warning(
-            "Moderate confidence: the repeat measurements of this photo disagreed "
-            "more than usual. Treat the angle as approximate."
+            "Moderate repeat agreement: some readings differ or a pass was rejected. "
+            "The angle is an estimate."
         )
+    st.caption("Green/red assesses this elbow estimate against your target; it does not grade the entire serve.")
 
 
 def render_measurement_detail(report: AnalysisReport) -> None:
@@ -79,19 +80,20 @@ def render_measurement_detail(report: AnalysisReport) -> None:
             f"""
 - **Arm measured:** player's {report.arm} arm
   ({'auto-detected' if report.arm_was_detected else 'selected'})
-- **Angle source:** MediaPipe 3D world landmarks (shoulder → elbow → wrist)
-- **Passes combined:** {report.sample_count} (original, downscaled, mirrored) —
+- **Angle source:** estimated MediaPipe 3D world landmarks (shoulder → elbow → wrist)
+- **Valid passes:** {report.sample_count}/{report.attempted_passes} (original, downscaled, mirrored, two small rotations) —
   the reported value is their median
-- **Disagreement across passes:** ±{spread / 2:.0f}° (full range {spread:.0f}°)
-- **Confidence:** {report.confidence}
+- **Observed readings:** {report.minimum_angle_degrees:.1f}°–{report.maximum_angle_degrees:.1f}° (full spread {spread:.1f}°)
+- **Repeat agreement:** {report.confidence}; this is not an accuracy probability or confidence interval
+- **Stage check:** preparation cues verified on every accepted pass; manual arm selection also uses this check
 """
         )
         if report.projected_angle_degrees is not None:
             st.caption(
                 f"For comparison, the flat 2D image-plane angle is "
                 f"{report.projected_angle_degrees:.0f}°. It differs whenever the arm "
-                "points toward or away from the camera, which is why the 3D "
-                "landmarks are used for the verdict."
+                "points toward or away from the camera. Pixel aspect ratio is "
+                "accounted for. Only estimated 3D landmarks decide the verdict."
             )
 
 
@@ -99,7 +101,7 @@ def main() -> None:
     st.title("🎾 TennisPose")
     st.caption(
         "Upload one serve photo. TennisPose finds the shoulder, elbow, and wrist, "
-        "measures the racket-arm elbow angle in 3D, and shows green, red, or "
+        "estimates the racket-arm elbow angle in 3D, and shows green, red, or "
         "cannot-analyze."
     )
 
@@ -111,7 +113,7 @@ def main() -> None:
             st.caption(
                 "At the trophy position the tossing arm is straight and high while "
                 "the racket arm is bent near shoulder height. Auto-detect uses that "
-                "difference; override it if the photo is unusual."
+                "difference; manual selection still requires preparation cues."
             )
 
         minimum, maximum = st.slider(
@@ -124,8 +126,8 @@ def main() -> None:
 
         st.divider()
         st.caption(
-            "One uploaded photo is processed locally for this request only. It is "
-            "not saved, sent to a server, or used to diagnose injury."
+            "One uploaded photo is processed in the local Python app. "
+            "Application code does not save it or upload it to a cloud service."
         )
         uploaded_file = st.file_uploader(
             "Upload a Trophy Pose photo",
@@ -179,7 +181,7 @@ not a validated coaching or clinical standard.
     except ModelFileMissingError as error:
         st.error("The local pose model is not installed yet.")
         st.code(str(error), language=None)
-        st.caption("Use the model download command in README.md, then rerun Streamlit.")
+        st.caption("Run start.command or start.bat to install and verify the model, then reopen the app.")
         return
     except Exception:  # MediaPipe returns platform-specific runtime errors.
         st.error("The local pose analysis could not finish for this photo.")
@@ -191,8 +193,8 @@ not a validated coaching or clinical standard.
     if report.status == "cannot_analyze":
         st.warning(f"**Cannot analyze.** {report.message}")
         st.caption(
-            "No score was generated. TennisPose reports nothing rather than "
-            "reporting a number it cannot stand behind."
+            f"Reason: {report.reason_code}. No score was generated. "
+            "Use a clear view of both arms at the preparation checkpoint."
         )
         st.image(display_image, use_container_width=True)
         return

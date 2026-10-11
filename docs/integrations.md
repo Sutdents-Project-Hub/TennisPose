@@ -2,7 +2,7 @@
 
 ## Local Pose Strategy
 
-The delivered application uses Streamlit for a locally served browser interface and MediaPipe Tasks PoseLandmarker for a single-image local inference pass. The PoseLandmarker uses the CPU delegate so the MVP does not require a GPU or any cloud computer-vision service.
+The delivered application uses Streamlit for a locally served browser interface and MediaPipe Tasks PoseLandmarker for five validated variants of one still image. The PoseLandmarker uses the CPU delegate so the MVP does not require a GPU or any cloud computer-vision service.
 
 `tennispose.pose_detector` owns model loading, the inference passes, and racket-arm selection. It must require reliable shoulder, elbow, and wrist points before passing values to `tennispose.pose_math`, and it must read the angle from `pose_world_landmarks` rather than the normalized image landmarks. The model is cached for the process lifetime and guarded by a lock, because building a PoseLandmarker costs about half a second while a detection costs about thirty milliseconds, and the MediaPipe detector is not safe to call concurrently. The geometry, gating, and feedback rules remain pure Python and independent of Streamlit widgets or MediaPipe objects.
 
@@ -38,3 +38,11 @@ No LLM, remote computer-vision API, analytics SDK, identity provider, payment se
 `start.bat` and `start.command` require preinstalled 64-bit Python 3.11 and share `scripts/bootstrap.py`. Setup creates a project-local `.venv`, installs binary wheels from the existing requirements, verifies imports and local model loading, and launches Streamlit on 127.0.0.1:8501 with usage statistics disabled. Python and OS settings are not modified. Subsequent runs skip pip installation when the requirements fingerprint matches; pip check and model integrity/loading checks still run. `--setup-only` prepares a machine before class; `--repair` reruns pip installation. Incompatible environments and model checksum mismatches are preserved and reported rather than deleted. See README for recovery and platform verification limits.
 
 The current MediaPipe binary showed background Clearcut uploader failures during verification. See the dependency network caveat in `security-and-privacy.md`; local inference and disabled Streamlit usage statistics do not establish zero dependency telemetry.
+
+## Research-informed quality guards
+
+No additional model, cloud API or third-party source code was incorporated.
+Torso-relative features were informed by official Google pose classification
+guidance; phase cues by primary serve kinematics literature. These are local
+heuristics with recorded validation, not a pretrained tennis classifier. See
+[validation.md](validation.md) for sources and the monocular estimate boundary.

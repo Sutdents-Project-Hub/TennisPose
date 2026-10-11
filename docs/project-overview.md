@@ -19,12 +19,12 @@ As a learner, I can upload an authorized Trophy Pose photo in the local web app 
 | FR-01 | Upload a photo | The local page accepts JPEG or PNG content only, limits input to 10 MB and 20 megapixels, and handles no upload, unsupported, oversized, or unreadable input safely. |
 | FR-02 | Identify the racket arm | The app detects the racket arm automatically and works for a left-handed or right-handed server. The user can override the choice with an explicit left or right selection. |
 | FR-03 | Detect pose | The local MediaPipe adapter returns selected-side landmarks or a typed cannot-analyze state. |
-| FR-04 | Measure angle | The app calculates the elbow angle from shoulder-elbow and wrist-elbow vectors in 3D world space, so a foreshortened arm is not understated. |
+| FR-04 | Measure angle | The app calculates the elbow angle from shoulder-elbow and wrist-elbow vectors in estimated 3D world space; inferred depth is not measured ground truth. |
 | FR-05 | Render evidence | The image shows relevant points, arm segments, and numeric angle. |
 | FR-06 | Explain result | The app labels a demonstration range and shows neutral in-range or adjustment feedback. |
 | FR-07 | Fail safely | Missing image, invalid input, missing landmarks, and invalid geometry never create a score. |
-| FR-08 | Refuse the wrong moment | In auto-detect mode, a photo that is not a serve trophy position returns cannot-analyze with the reason, rather than scoring a different moment of the serve against the trophy checkpoint. A visible manual arm override is measured with a caution. |
-| FR-09 | Report confidence | The app measures the photo more than once and reports how much the readings disagreed, refusing when no majority agrees. |
+| FR-08 | Refuse the wrong moment | Both automatic and manual modes require preparation-like dual-arm cues independent of the feedback interval; otherwise return cannot-analyze with a reason. |
+| FR-09 | Report repeat agreement | Five validated, associated passes; at least three survive, full spread <=20 degrees, and all support the same interval category. Show observed bounds, not an accuracy probability. |
 
 ## Non-Functional Requirements
 
@@ -44,10 +44,12 @@ As a learner, I can upload an authorized Trophy Pose photo in the local web app 
 ## Acceptance Evidence
 
 1. **Required unit tests:** Python tests cover 2D and 3D angle geometry, body scale, the trophy-position gate, racket-arm selection, pooling and confidence, entry-point guards, and inclusive feedback boundaries.
-2. **Required accuracy regression:** `tests/test_reference_photos.py` replays the authorized reference photos and asserts the chosen arm, the verdict, and the angle against recorded expectations.
+2. **Required output regression:** `tests/test_reference_photos.py` replays the authorized reference photos and asserts the chosen arm, the verdict, and the angle against recorded expectations.
 3. **Required manual local check:** A clear authorized photo reaches the configured in-range result.
 4. **Required manual local check:** A clear authorized photo reaches the configured adjustment result.
-5. **Required manual local check:** In auto-detect mode, a non-trophy photo refuses instead of scoring.
+5. **Required manual local check:** A non-preparation photo refuses in automatic and manual modes, including a widened target range.
 6. **Required manual local check:** An unreliable input reaches a clear cannot-analyze state.
 7. **Required manual local check:** Empty, unsupported, or unreadable input returns safe recovery guidance.
 8. **Required submission review:** Overlay, limitations, demo script, attribution, and behavior agree.
+
+Research, current photographic checks and the true-angle validation boundary are recorded in [validation.md](validation.md).

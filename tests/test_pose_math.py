@@ -163,10 +163,10 @@ class PoolingTests(unittest.TestCase):
         self.assertAlmostEqual(result.degrees, 92.1)
         self.assertTrue(result.in_demo_range)
 
-    def test_agreeing_majority_keeps_high_confidence(self) -> None:
+    def test_agreeing_majority_cannot_hide_a_conflicting_pass(self) -> None:
         result = pool_angles([170.5, 168.3, 130.6], 80.0, 120.0)
 
-        self.assertEqual(result.confidence, "high")
+        self.assertEqual(result.confidence, "low")
         self.assertAlmostEqual(result.degrees, 168.3)
         self.assertFalse(result.in_demo_range)
 
@@ -175,10 +175,10 @@ class PoolingTests(unittest.TestCase):
 
         self.assertEqual(result.confidence, "low")
 
-    def test_spread_is_reported_even_when_confident(self) -> None:
+    def test_full_spread_drives_agreement(self) -> None:
         result = pool_angles([102.9, 100.9, 72.1], 80.0, 120.0)
 
-        self.assertEqual(result.confidence, "high")
+        self.assertEqual(result.confidence, "low")
         self.assertAlmostEqual(result.spread_degrees, 30.8, places=1)
 
     def test_no_usable_measurement_returns_none(self) -> None:
