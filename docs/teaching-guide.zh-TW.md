@@ -2,7 +2,7 @@
 
 本教案給第一次帶學生讀 AI/Python 小專題的老師使用。目標不是把學生訓練成姿勢辨識工程師，而是讓他們能說清楚：一張授權的發球 Trophy Pose 照片如何在**本機**得到一個可檢查的結果，以及系統為什麼有時應該拒絕回答。
 
-TennisPose 只檢查持拍手肘的肩膀—手肘—手腕夾角。綠色、紅色與 80–120 度是可調的展示規則，不是教練、醫療、受傷預防或完整發球評估。課中只使用 `docs/demo-assets/` 內十張已授權且附署名的照片；不要把學生或私人照片放入 Git、教材或公開服務。
+TennisPose 只檢查持拍手肘的肩膀—手肘—手腕夾角。綠色、紅色與 80–120 度是可調的展示規則，不是教練、醫療、受傷預防或完整發球評估。課中使用 `docs/demo-assets/` 內 45 張已授權且附署名的照片；另有兩段光學動作捕捉資料供延伸練習。不要把學生或私人照片放入 Git、教材或公開服務。
 
 ## 課前準備（請提前完成安裝，不要只留 10 分鐘）
 
@@ -46,11 +46,11 @@ TennisPose 只檢查持拍手肘的肩膀—手肘—手腕夾角。綠色、紅
 1. `README.md`：產品只做什麼、不做什麼，以及本機運作邊界。
 2. `streamlit_app.py`：學生按上傳、選擇手臂、看到綠紅或 cannot analyze 的位置。
 3. `tennispose/image_input.py`：為何只收 JPEG/PNG、上限 10 MB、20 百萬像素，且不把上傳圖片寫入磁碟。
-4. `tennispose/pose_math.py`：從 `calculate_elbow_angle_3d` 看向量角度；從 `pool_angles` 看三次讀值取中位數與信心；從 `DEFAULT_TROPHY_MINIMUM/MAXIMUM` 看展示範圍。
+4. `tennispose/pose_math.py`：從 `calculate_elbow_angle_3d` 看向量角度；從 `pool_angles` 看五次複測中至少三次有效讀值的中位數、完整差距與一致程度；從 `DEFAULT_TROPHY_MINIMUM/MAXIMUM` 看展示範圍。
 5. `tennispose/pose_detector.py`：模型讀取、手臂自動選擇與 `cannot_analyze` 原因碼如何串起來。只讀 `_select_arm`、`_collect_angles` 與 `_cannot_analyze` 附近即可。
 6. `docs/architecture.md`：把前面各檔案放回完整資料流，特別看 Result States 與 reason codes。
 7. `tests/test_pose_math.py`、`tests/test_arm_selection.py`：程式如何用固定輸入確認「邊界剛好 80/120 度」「不是 Trophy Pose 時拒絕」等規則。
-8. `docs/demo-assets/README.md`：十張示例的來源、作者、授權與已記錄結果；這是展示圖片時必讀的 attribution manifest。
+8. `docs/demo-assets/README.md`：45 張照片與兩段動作捕捉資料的來源、作者、授權及結果；展示素材時必讀。
 
 ## 安全、低風險小練習（含答案）
 
@@ -70,7 +70,7 @@ TennisPose 只檢查持拍手肘的肩膀—手肘—手腕夾角。綠色、紅
 
 ### 練習 3：改變展示範圍，觀察顏色（8 分鐘）
 
-選一張已成功分析的範例，先將側欄範圍調成 80–120，再調成 110–120（例如使用約 101 度的 Alcaraz 範例），觀察顏色是否改變。請勿把這個結果解釋成技術好壞。
+選一張已成功分析的範例，先將側欄範圍調成 80–120，再調成 110–120（例如使用約 99 度的 McEnroe 或 104 度的臺北 S_030），觀察顏色是否改變。請勿把這個結果解釋成技術好壞。
 
 參考答案：範圍是「含端點」的展示規則：量到的角度等於最小值或最大值時是 green，落在外面時是 red。畫面角度會四捨五入，不能用顯示的整數驗證剛好等於端點；精確的 80/120 邊界由 `tests/test_pose_math.py` 測試。這個操作只改目前設定，並沒有改照片。
 
@@ -87,19 +87,34 @@ TennisPose 只檢查持拍手肘的肩膀—手肘—手腕夾角。綠色、紅
 | 結果 | 檔案 | 已記錄的理由或角度 |
 |---|---|---|
 | Cannot analyze | 01 Dominic Pagon | Ready stance，非 Trophy Pose，不給分數。 |
-| Green | 02 John McEnroe | 左臂，101°。 |
+| Green | 02 John McEnroe | 左臂，99.2°，固定聚焦裁切。 |
 | Cannot analyze | 03 Jelena Ostapenko | 持拍手被遮住，手臂不明。 |
 | Cannot analyze | 04 Carlos Alcaraz | 3D 複測衝突，拒絕判定。 |
 | Cannot analyze | 05 Gökberk Ergeneman | 隨揮階段，拒絕判定。 |
 | Cannot analyze | 06 Nicolas Mahut | 擊球階段，拒絕判定。 |
-| Cannot analyze | 07 Tommy Haas | 球拍手低於 Trophy Pose 檢查點。 |
+| Cannot analyze | 07 Tommy Haas | 手臂不可靠／持拍手不明。 |
 | Green | 08 Roger Federer | 右臂，85.3°。 |
-| Green | 09 Novak Djokovic | 右臂，111.6°。 |
+| Green | 09 Novak Djokovic | 右臂，111.1°，固定聚焦裁切。 |
 | Cannot analyze | 10 Maria Sharapova | 擊球階段，拒絕判定。 |
 
 2026-10-11 更新：05、06、10 是隨揮或擊球時刻，新版會拒測；手動選臂或調寬範圍也不能略過此檢查。舊結果截圖屬歷史版本。紅色流程可用 McEnroe 照片設定 110–120° 示範，須說明這是設定示範，並非已驗證的錯誤技術。
 
 這十張不是「十種所有情況」或模型準確率證明。它們是有來源的回歸示例，仍受單張照片時刻、鏡頭角度、裁切、遮擋、人物大小、服裝、光線與模型估計限制。特別提醒學生：紅色只表示本次 3D 估計落在目前設定的展示範圍外；綠色不等於動作正確、健康或安全；cannot analyze 也不表示選手動作不好。
+
+## 新增實拍與動作捕捉練習
+
+`docs/demo-assets/teaching-photos/` 保存六張補充照片，可比較左手發球、遮擋、擊球與隨揮。`taipei/` 保存 29 張真實照片與人工 2D 標註；可先用聯絡表判斷階段，再上傳 S_030、S_120、S_200、S_300。新版會依人物大小做固定裁切，畫面明示裁切；不是依綠色結果挑最有利角度。這批八張目視準備姿勢可分析數由 0 增加到 4，19 張其他階段都拒測；這是開發樣本的可用率，不能叫正誤準確率。
+
+延伸題：為什麼人工 2D 點、模型估計 3D、光學實測資料與教練正誤標註不能互換？參考答案：2D 沒有深度；模型 3D 仍可能估錯；光學動作捕捉可驗證幾何但這兩段沒有對應照片與 Trophy 時刻；教練標註才回答技術正誤。目前的 HP/RP 是參與者能力分類，不是每幀正誤。
+
+老師可使用下列指令，另開輸出資料夾保存學生練習報告：
+
+```bash
+.venv/bin/python scripts/evaluate_photos.py --output archive/class-photos --save-overlays
+.venv/bin/python scripts/evaluate_mocap.py --report-dir archive/class-mocap
+```
+
+動作捕捉工具會比較兩種獨立角度公式；已記錄 12,000 次有效讀值的最大差異約 1.85e-12°。這證明數學實作一致，不能當作照片角度誤差。報告中的教練正誤與照片實測 3D 誤差都保留 `null`。`class-mocap` 必須是新的資料夾，避免覆寫報告。顯示或分發照片、裁切結果與角度表時，要一併保留各資料集的作者、來源及 CC 授權；動作捕捉衍生資料使用 CC BY-SA 3.0。
 
 ## 常見故障與現場處理
 
@@ -129,7 +144,7 @@ TennisPose 只檢查持拍手肘的肩膀—手肘—手腕夾角。綠色、紅
 
 開啟 `streamlit_app.py`，找到 `st.title("🎾 TennisPose")`，改成 `st.title("🎾 我們這組的網球角度實驗")`，存檔後回到瀏覽器。若看到 Rerun 提示就按下；否則重新整理。
 
-請學生指出「哪一行程式改了、頁面哪裡改了、角度計算是否改了」。答案：只改標題，量測邏輯沒有改。再用同一張 Alcaraz 圖片確認角度與顏色一致。這是最小的修改與回歸驗證練習。
+請學生指出「哪一行程式改了、頁面哪裡改了、角度計算是否改了」。答案：只改標題，量測邏輯沒有改。再用同一張 McEnroe 圖片確認角度與顏色一致。這是最小的修改與回歸驗證練習。
 
 ## 啟動器復原操作
 

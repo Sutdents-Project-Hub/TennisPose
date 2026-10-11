@@ -106,6 +106,7 @@ class AnalysisReport:
     minimum_angle_degrees: float | None = None
     maximum_angle_degrees: float | None = None
     attempted_passes: int = 0
+    focused_on_player: bool = False
 
 
 _detector_lock = threading.Lock()
@@ -155,6 +156,7 @@ def analyze_rgb_image(
     demo_maximum: float = DEFAULT_TROPHY_MAXIMUM,
     model_path: Path = DEFAULT_MODEL_PATH,
     stability_passes: bool = True,
+    focus_player: bool = True,
 ) -> tuple[np.ndarray, AnalysisReport]:
     """Analyze one RGB photo locally and return an RGB annotation and report.
 
@@ -177,9 +179,15 @@ def analyze_rgb_image(
     canvas = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR)
     detector = get_detector(model_path)
 
+    focused = False
+
+    def _refuse(canvas, selected_arm, message, reason_code, *, hint=""):
+        return _cannot_analyze(canvas, selected_arm, message, reason_code,
+                               hint=hint, focused_on_player=focused)
+
     primary = _detect(detector, image_rgb)
     if primary is None:
-        return _cannot_analyze(
+        return _refuse(
             canvas,
             None,
             "No person was detected in this photo.",
@@ -189,8 +197,32 @@ def analyze_rgb_image(
 
     landmarks, world_landmarks = primary
     if len(landmarks) != 33 or len(world_landmarks) != 33:
-        return _cannot_analyze(canvas, None, "The detector returned incomplete landmarks.",
+        return _refuse(canvas, None, "The detector returned incomplete landmarks.",
                                "invalid_landmarks", hint="Try another clear photo.")
+    box = _player_focus_box(landmarks) if focus_player else None
+    height, width = image_rgb.shape[:2]
+    if box is not None:
+        pixels = _focus_pixels(box, width, height)
+        if (pixels[2]-pixels[0] < 64 or pixels[3]-pixels[1] < 64 or
+                body_scale(*(landmarks[i] for i in (11, 12, 23, 24)), width, height) is None):
+            box = None
+    if box is not None:
+        x0, y0, x1, y1 = _focus_pixels(box, width, height)
+        crop = np.ascontiguousarray(image_rgb[y0:y1, x0:x1])
+        detection = _detect(detector, crop)
+        if detection is None or len(detection[0]) != 33 or len(detection[1]) != 33:
+            return _refuse(canvas, None, "The focused player could not be measured.",
+                                   "focus_lost", hint="Try a closer photo showing both arms.")
+        transform = np.array([[1., 0, -x0], [0, 1., -y0]])
+        restored = _restore_landmarks(detection[0], transform, (x1-x0, y1-y0),
+                                      (width, height), False)
+        if not _same_torso(landmarks, restored, width, height):
+            return _refuse(canvas, None, "The focus changed the detected player.",
+                                   "focus_lost", hint="Use a photo containing one clear player.")
+        image_rgb = crop
+        canvas = cv2.cvtColor(crop, cv2.COLOR_RGB2BGR)
+        landmarks, world_landmarks = detection
+        focused = True
     draw_skeleton(canvas, landmarks)
 
     height, width = image_rgb.shape[:2]
@@ -203,7 +235,7 @@ def analyze_rgb_image(
         height,
     )
     if scale is None:
-        return _cannot_analyze(
+        return _refuse(
             canvas,
             None,
             "The player is too small or too cropped to measure.",
@@ -221,7 +253,7 @@ def analyze_rgb_image(
 
     selection = _select_arm(arm, observations)
     if selection.report is not None:
-        return _cannot_analyze(
+        return _refuse(
             canvas,
             selection.report.arm,
             selection.report.message,
@@ -237,7 +269,7 @@ def analyze_rgb_image(
     )
     pooled = pool_angles(angles, demo_minimum, demo_maximum)
     if pooled is None:
-        return _cannot_analyze(
+        return _refuse(
             canvas,
             selection.arm,
             "The selected elbow geometry was invalid, so no angle was shown.",
@@ -246,7 +278,7 @@ def analyze_rgb_image(
         )
 
     if pooled.confidence == "low":
-        return _cannot_analyze(
+        return _refuse(
             canvas,
             selection.arm,
             "The measurement was not stable enough to report a result.",
@@ -260,7 +292,7 @@ def analyze_rgb_image(
         )
 
     if not pooled.verdict_consistent:
-        return _cannot_analyze(
+        return _refuse(
             canvas, selection.arm,
             "The repeat readings cross a target boundary; no red/green verdict is supported.",
             "borderline", hint="Try a clearer view or review the chosen target range.",
@@ -278,6 +310,7 @@ def analyze_rgb_image(
         demo_maximum,
         arm_was_detected=selection.arm_was_detected,
         attempted_passes=5 if stability_passes else 1,
+        focused_on_player=focused,
     )
 
 
@@ -520,6 +553,44 @@ def _collect_angles(
     return angles
 
 
+def _player_focus_box(landmarks: Sequence[Point]) -> tuple[float, float, float, float] | None:
+    """Focus a small detected person before measuring, independent of feedback.
+
+    The fixed box uses reliable coarse image landmarks only for localization.
+    It never selects a crop by angle, phase, target, or green/red outcome.
+    """
+    if (len(landmarks) != 33 or
+            not all(np.isfinite((p.x, p.y)).all() for p in landmarks) or
+            not all(has_reliable_point(landmarks[i], .2) for i in (11, 12))):
+        return None
+    points = [p for p in landmarks if has_reliable_point(p, .2)]
+    if len(points) < 8:
+        return None
+    left, right = min(p.x for p in points), max(p.x for p in points)
+    top, bottom = min(p.y for p in points), max(p.y for p in points)
+    width, height = right-left, bottom-top
+    if width <= 0 or height <= 0 or width*height > .10:
+        return None
+    return (max(0., left-.3*width), max(0., top-.15*height),
+            min(1., right+.3*width), min(1., bottom+.15*height))
+
+
+def _focus_pixels(box: tuple[float, float, float, float], width: int, height: int) -> tuple[int, int, int, int]:
+    return (int(box[0]*width), int(box[1]*height),
+            min(width, int(box[2]*width)+1), min(height, int(box[3]*height)+1))
+
+
+def _same_torso(primary: Sequence[Point], repeated: Sequence[Point], width: int, height: int) -> bool:
+    """Associate focus with the original shoulders without trusting coarse arms."""
+    scale = body_scale(*(primary[i] for i in (11, 12, 23, 24)), width, height)
+    if scale is None:
+        return False
+    return all(has_reliable_point(repeated[i], .2) and
+               np.hypot((primary[i].x-repeated[i].x)*width,
+                        (primary[i].y-repeated[i].y)*height) <= .25*scale
+               for i in (11, 12))
+
+
 def _restore_landmarks(
     landmarks: Sequence[Point], transform: np.ndarray,
     variant_size: tuple[int, int], original_size: tuple[int, int], mirrored: bool,
@@ -605,6 +676,7 @@ def _analyzed(
     *,
     arm_was_detected: bool,
     attempted_passes: int,
+    focused_on_player: bool = False,
 ) -> tuple[np.ndarray, AnalysisReport]:
     """Draw and describe a completed measurement."""
 
@@ -630,7 +702,10 @@ def _analyzed(
         f"  |  target {demo_minimum:.0f}-{demo_maximum:.0f} deg",
         f"{message}  |  repeat agreement {pooled.confidence}",
     ]
-    draw_banner(canvas, f"TennisPose  {verdict}", details, color)
+    # A banner would hide most of a small focused player. The UI already shows
+    # the verdict; keep the crop's annotated arm visible for inspection.
+    if not focused_on_player:
+        draw_banner(canvas, f"TennisPose  {verdict}", details, color)
 
     return cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB), AnalysisReport(
         status="analyzed",
@@ -648,6 +723,7 @@ def _analyzed(
         minimum_angle_degrees=round(pooled.minimum_degrees, 1),
         maximum_angle_degrees=round(pooled.maximum_degrees, 1),
         attempted_passes=attempted_passes,
+        focused_on_player=focused_on_player,
     )
 
 
@@ -658,15 +734,17 @@ def _cannot_analyze(
     reason_code: str,
     *,
     hint: str = "",
+    focused_on_player: bool = False,
 ) -> tuple[np.ndarray, AnalysisReport]:
     """Draw and describe a refusal, always with a reason the user can act on."""
 
-    draw_banner(
-        canvas,
-        "TennisPose  CANNOT ANALYZE",
-        [line for line in (message, hint) if line],
-        AMBER,
-    )
+    if not focused_on_player:
+        draw_banner(
+            canvas,
+            "TennisPose  CANNOT ANALYZE",
+            [line for line in (message, hint) if line],
+            AMBER,
+        )
     return cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB), AnalysisReport(
         status="cannot_analyze",
         arm=arm,
@@ -674,4 +752,5 @@ def _cannot_analyze(
         in_demo_range=None,
         message=f"{message} {hint}".strip(),
         reason_code=reason_code,
+        focused_on_player=focused_on_player,
     )

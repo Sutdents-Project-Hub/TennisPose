@@ -88,6 +88,8 @@ def render_measurement_detail(report: AnalysisReport) -> None:
 - **Stage check:** preparation cues verified on every accepted pass; manual arm selection also uses this check
 """
         )
+        if report.focused_on_player:
+            st.caption("One extra pass located the small player before the five measurement passes.")
         if report.projected_angle_degrees is not None:
             st.caption(
                 f"For comparison, the flat 2D image-plane angle is "
@@ -189,6 +191,9 @@ not a validated coaching or clinical standard.
         return
 
     display_image = fit_result_image(annotated_image)
+    if report.focused_on_player:
+        st.caption("A fixed local crop focuses the small player. The displayed image is this crop; cropping does not establish angle accuracy.")
+    image_options = {"width": 480} if report.focused_on_player else {"use_container_width": True}
 
     if report.status == "cannot_analyze":
         st.warning(f"**Cannot analyze.** {report.message}")
@@ -196,11 +201,11 @@ not a validated coaching or clinical standard.
             f"Reason: {report.reason_code}. No score was generated. "
             "Use a clear view of both arms at the preparation checkpoint."
         )
-        st.image(display_image, use_container_width=True)
+        st.image(display_image, **image_options)
         return
 
     render_verdict(report, float(minimum), float(maximum))
-    st.image(display_image, use_container_width=True)
+    st.image(display_image, **image_options)
     render_measurement_detail(report)
     st.caption(
         "The target range is configurable demonstration logic, not a medically or "

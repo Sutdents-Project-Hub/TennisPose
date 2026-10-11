@@ -123,3 +123,26 @@ licensing terms.
   MediaPipe photo accuracy.
 - Current commands, browser evidence and remaining validation boundaries are
   recorded in [validation.md](validation.md). Historical runs above remain dated.
+
+### Small-player coverage and licensed teaching data — October 11, 2026
+
+- Added fixed size-dependent focus, with shoulder association and fresh five-pass
+  measurement. Coarse localization cannot decide the angle or feedback interval.
+- Taipei development preparation coverage improved 0/8 to 4/8; all 19 clear
+  other-stage inputs refused. Across 45 photos, preparation coverage improved
+  4/15 to 8/15 and all 28 unsuitable/other-stage inputs refused. Two uncertain
+  labels are excluded, not forced into correctness labels.
+- Preserved 45 licensed photos, original human 2D annotations, two optical
+  serve BVHs and reproducible reports under `docs/demo-assets/`. 12,000 valid
+  bilateral BVH readings verify two formulas to <=1.85e-12 degrees; this is
+  arithmetic evidence, not photo-estimator accuracy.
+- The expanded suite passes 112 tests with zero skips on Apple Silicon macOS.
+  Focus tests include real positive and other-stage photos, association loss,
+  target independence and refusal provenance. Metric tests protect missing truth
+  and wrong-arm exclusions. Dependencies/model checksum remain unchanged.
+- The saved current UI demonstrates Taipei S_030 focused green, 104.0 degrees
+  and four valid readings. Crop output is identified and does not obscure the
+  player's arms with a banner. Local checks are recorded in validation.md.
+- Independent coach-correctness and paired photo/3D labels remain absent.
+  Access request drafts are prepared at the user's request, not sent. No stronger
+  technique, medical, deployment or competition acceptance is claimed.

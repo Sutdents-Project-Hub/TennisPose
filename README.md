@@ -8,7 +8,12 @@ It is deliberately a single-photo learning aid. It is not a live-video coach, fu
 
 ## How the Measurement Works
 
-The pipeline checks three separate questions before displaying a verdict:
+When the detected player occupies a small part of the photo, a fixed,
+target-independent crop improves the model's view before measurement. The crop
+is kept in memory, checked against the original shoulders, and displayed as the
+annotated result. Localization readings never enter the angle pool.
+
+The pipeline then checks three separate questions before displaying a verdict:
 
 1. **Is this a supported preparation view?** Torso-normalized racket-wrist and
    elbow positions, together with an elevated opposite hand, support a
@@ -154,6 +159,11 @@ against `tests/reference_expectations.json`. These are model-output regression s
 licensed repository folder is the default; `TENNISPOSE_SAMPLE_DIR` can override
 it. Missing photos/model are reported as skipped checks, not passes.
 
+The October 11 suite passed 112 tests with zero skips on Apple Silicon macOS.
+It also checks focus association, real positive/other-phase photos, evaluation
+denominators, and BVH forward kinematics. See [validation](docs/validation.md)
+for the tested runtime and the distinction between arithmetic and photo accuracy.
+
 ```bash
 TENNISPOSE_SAMPLE_DIR=docs/demo-assets/reference-photos \
   .venv/bin/python -m unittest discover -s tests -v
@@ -170,18 +180,26 @@ Before competition submission, manually exercise these local paths in the browse
 
 ## Demo Assets and Results
 
-The repository includes a licensed, documented ten-photo reference set and the
-corresponding full-page Streamlit results. The input photos are used by the
-regression suite. Existing screenshots are historical August 2026 evidence;
-they do not represent the revised October quality gates. See
+The repository preserves **45 licensed real photos**, human 2D annotations,
+two optical-motion-derived serve BVHs, and reproducible evaluation outputs for
+teaching. Fixed focus raised analyzed preparation views from **0/8 to 4/8** in
+the new Taipei development sample; its 19 clear other-stage views all refused.
+The 12,000 BVH arm readings verify angle arithmetic, not photo-model accuracy.
+No coach-correctness or paired photo/3D accuracy is inferred from these results.
+Existing screenshots in `streamlit-results/` are historical August 2026 evidence.
+See
 [the asset manifest](docs/demo-assets/README.md) for source links, author
 credits, license terms, result summaries, and public-use conditions.
+[Dataset access request drafts](docs/dataset-access-requests.md) are prepared
+for coach labels and paired 3D references; they have not been sent.
 
 ## Repository Layout
 
 ```text
 start.bat / start.command   # classroom setup and local launch
 scripts/bootstrap.py        # shared setup, integrity checks, loopback server
+scripts/evaluate_photos.py  # offline replay of licensed teaching photos
+scripts/evaluate_mocap.py   # offline optical-data geometry comparison
 streamlit_app.py             # local Streamlit entry point
 requirements.txt             # pinned Python dependencies
 tennispose/
@@ -190,6 +208,8 @@ tennispose/
   image_input.py             # content validation and safe JPEG/PNG decoding
   pose_detector.py           # MediaPipe inference, arm selection, and reporting
   annotate.py                # result drawing
+  evaluation.py              # evidence-aware offline metrics
+  mocap.py                   # strict BVH forward kinematics and angle oracle
 tests/
   test_pose_math.py          # geometry, gating, and pooling
   test_arm_selection.py      # racket-arm detection and refusal reasons
@@ -197,12 +217,19 @@ tests/
   test_analysis_pipeline.py  # entry-point guards and empty-photo behavior
   test_reference_photos.py   # output regression over authorized photos
   test_image_input.py        # upload validation
+  test_player_focus.py       # fixed focus and real-photo coverage regression
+  test_evaluation.py         # missing truth, denominators and arm exclusions
+  test_mocap.py              # independent FK and actual optical-data checks
   reference_expectations.json
 models/                      # ignored local MediaPipe model file
 docs/
   demo-assets/
     reference-photos/        # licensed reference inputs used by the regression suite
     streamlit-results/       # full-page local-browser evidence for the ten inputs
+    teaching-photos/         # six licensed phase/visibility teaching cases
+    taipei/                  # 29 photos and human 2D annotations, CC BY 4.0
+    mocap/                   # two optical serve BVHs, CC BY-SA 3.0
+    evaluation-2026-10-11/    # saved predictions, overlays, UI tree, angle CSV
     README.md                # attribution and result manifest
 ```
 
@@ -218,12 +245,14 @@ docs/
 - [Dependencies](docs/integrations.md)
 - [Security and privacy](docs/security-and-privacy.md)
 - [Demo asset attribution and results](docs/demo-assets/README.md)
+- [Dataset access request drafts](docs/dataset-access-requests.md)
 - [Repository working rules](AGENTS.md)
 
 ## License and Attribution
 
-No overall project license has been selected. The versioned demo photos and
-derived screenshots retain the upstream Creative Commons terms documented in
+No overall source-code license has been selected. The versioned photos,
+annotations, motion-capture data and derived results retain their individual
+upstream Creative Commons terms documented in
 [the asset manifest](docs/demo-assets/README.md). Confirm source-code
 ownership, dependency licenses, model terms, asset attribution, and current
 competition rules before public submission or release.

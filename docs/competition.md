@@ -53,3 +53,11 @@ Record the local browser run as the delivered product. Do not portray it as a mo
 
 August screenshots in `demo-assets/streamlit-results/` are historical; use current
 local browser evidence when recording. See [validation.md](validation.md).
+
+The current [saved evaluation](demo-assets/evaluation-2026-10-11/README.md)
+includes Taipei S_030 as a focused green example (104.0 degrees, four valid
+readings). Its default display is the fixed crop, identified by the UI. Explain
+that improved preparation coverage is development evidence, not coach-labelled
+correctness. The expanded teaching catalog includes clear wrong-phase examples,
+but no verified incorrect Trophy technique. Credit the Taipei authors and CC BY
+4.0 license whenever using this example publicly.

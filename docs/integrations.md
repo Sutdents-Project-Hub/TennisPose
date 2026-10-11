@@ -41,6 +41,12 @@ The current MediaPipe binary showed background Clearcut uploader failures during
 
 ## Research-informed quality guards
 
+The fixed small-player crop adds one localization detection when used; all five
+measurement variants still use the same cached CPU model. NumPy also supports
+offline BVH forward kinematics; no dependency, model, external AI, or network
+analysis service was added. Offline download/evaluation tools handle only
+explicitly licensed teaching data and are never called by Streamlit uploads.
+
 No additional model, cloud API or third-party source code was incorporated.
 Torso-relative features were informed by official Google pose classification
 guidance; phase cues by primary serve kinematics literature. These are local

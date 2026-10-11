@@ -9,6 +9,7 @@ Local browser
   -> Streamlit upload, arm mode, and target range
   -> in-memory image bytes
   -> local MediaPipe PoseLandmarker (CPU, loaded once per process)
+  -> fixed small-player focus, verified against original shoulders when used
   -> per-arm reliability, body scale, and trophy-position gate
   -> racket-arm selection (auto or explicit)
   -> 3D elbow angle over original + downscaled + mirrored + two rotated passes
@@ -28,6 +29,8 @@ Local browser
 | `tennispose/pose_math.py` | Point validation, 2D and 3D angle calculation, body scale, trophy-position gate, pooling, confidence, and feedback rule | Import Streamlit, OpenCV, MediaPipe, files, or network services |
 | `tennispose/pose_detector.py` | Cache the local model, run the inference passes, select the racket arm, and build the typed report | Create a backend, persist images, draw, or make medical claims |
 | `tennispose/annotate.py` | Draw the skeleton, measured arm, angle arc, and result banner onto one BGR canvas | Decide a verdict or run inference |
+| `tennispose/evaluation.py`, `scripts/evaluate_photos.py` | Offline licensed-photo metrics, hashes and optional teaching overlays | Export private app uploads or interpret missing labels as accuracy |
+| `tennispose/mocap.py`, `scripts/evaluate_mocap.py` | Offline BVH forward kinematics and independent angle-formula checks | Treat participant tier as pose correctness or renderings as photo validation |
 | `tests/` | Deterministic coverage of geometry, gating, selection, entry-point guards, and reference-photo output regression | Depend on a browser or on photos that cannot be skipped |
 | `models/` | Ignored local MediaPipe model dependency | Store user images or tracked project assets |
 
@@ -64,6 +67,22 @@ spatial consistency, not identity recognition or comprehensive multi-person dete
 
 ## Pooling and Reporting
 
+Before measurement, a complete full-image detection may propose one fixed crop
+when the reliable landmark box occupies at most 10% of the image. The proposal
+requires two reliable shoulders, at least eight usable points, finite coordinates,
+at least 20 pixels of torso scale, and a crop of at least 64 pixels per dimension.
+It adds 30% horizontal and 15% vertical margins, clipped to the frame. A fresh
+crop detection must restore both shoulders within 0.25 original torso scales;
+otherwise return `focus_lost`, with no coarse-angle fallback. The decision reads
+neither the target interval nor the candidate elbow angle.
+
+A successful crop becomes the measurement image. One extra localization pass
+is excluded from the five readings; the original full-image world estimate is
+also excluded. `focused_on_player` accompanies both analyzed and refused crop
+reports. The UI identifies the crop, limits its display width, and shows the
+verdict outside it so a banner cannot cover the small player's arms. Cropping
+does not establish absolute angle accuracy and is not saved by the app.
+
 Original, 75% downscaled, horizontally mirrored, and -8/+8 degree rotated images
 are inferred locally. Every repeat reruns the visibility, presence, geometry and
 phase checks, then verifies association with the primary arm. The median uses
@@ -91,6 +110,7 @@ interval or a bound on absolute angle error.
 | Code | Meaning |
 |---|---|
 | `no_pose` | No person was detected in the photo. |
+| `focus_lost` | The fixed crop lost or changed the detected player; no coarse-angle fallback. |
 | `no_scale` | The player is too small or too cropped to normalize positions against. |
 | `no_reliable_arm` | Neither arm was visible enough to measure. |
 | `arm_not_visible` | The explicitly selected arm was not visible enough to measure. |

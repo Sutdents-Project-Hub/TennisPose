@@ -52,9 +52,9 @@ regression inputs, not heldout accuracy data. Current default results:
 
 | Input | Result |
 |---|---|
-| McEnroe | Left, 100.8 degrees; 98.2–105.3 observed; high repeat agreement |
+| McEnroe | Left, 99.2 degrees; 95.2–103.1 observed; high repeat agreement; fixed focus |
 | Federer | Right, 85.3 degrees; 81.4–90.7; moderate agreement |
-| Djokovic | Right, 111.6 degrees; 100.9–113.2; moderate agreement |
+| Djokovic | Right, 111.1 degrees; 98.3–112.3; moderate agreement; fixed focus |
 | Alcaraz | Genuine preparation view, but conflicting inferred angles; `unstable`, no score |
 | Pagon, Ergeneman, Mahut, Sharapova | Unsupported preparation cues; no score |
 | Ostapenko, Haas | Unreliable/ambiguous arm; no score |
@@ -78,7 +78,57 @@ coverage cost, not a perfect accuracy claim. Murray's three images share a
 player/event/photographer. Six images are too few to estimate population accuracy.
 Nadal/Stephens use the uncropped licensed Flickr upstream images; the local
 manifest records the actual URLs, sizes, hashes and terms. Additional photos
-and annotations remain in ignored local `archive/optimization-2026-10-11/`.
+and annotations were initially stored in ignored local archives; the six reviewed
+photos are now preserved in [teaching-photos/](demo-assets/teaching-photos/README.md)
+with exact source, license, upstream/local hashes and modification notices.
+
+## Positive Coverage Optimization and Saved Data
+
+A fixed small-player crop improves the model input before the same five
+measurement variants. It reads coarse image landmarks and player size, never
+the target/angle/green result. Shoulder association must survive; localization
+estimates never enter the angle pool. Failure has no coarse-angle fallback.
+The full rule is in [architecture.md](architecture.md#pooling-and-reporting).
+
+The new [Taipei photos](demo-assets/taipei/README.md) provide 29 actual JPEGs and
+original human 2D joints. Before first inference, full-frame and annotated-ROI
+inspection labelled eight clear preparation views, 19 other-stage views and two
+uncertain views. Coach verdicts and measured 3D angles remain null.
+
+| Development-sample measure | Without focus | Fixed focus |
+|---|---:|---:|
+| Taipei preparation views analyzed | 0/8 | 4/8 |
+| All visually labelled preparation views analyzed | 4/15 | 8/15 |
+| Clear other-stage/unsuitable views incorrectly analyzed | 0/28 | 0/28 |
+
+Focused Taipei positives are S_030 (104.0°), S_120 (112.7°), S_200 (109.7°) and
+S_300 (110.8°), each with four valid readings, <=8.9° spread, the visually
+labelled racket arm and no interval crossing. These are estimates, not true-angle
+labels. The two uncertain Taipei frames are excluded from phase fractions.
+The original ten-photo regression remains three green/seven refusals; Nadal
+remains analyzed. No refusal was re-labelled as incorrect technique.
+
+Taipei frames share one evaluation group because verified player/session IDs
+are unavailable. They were used for focus development, not unseen acceptance.
+Unconditional cropping harmed an existing positive, and square/resize treatment
+did not improve coverage. Only the size-dependent crop with unchanged repeat
+guards was adopted. Zero wrong-phase acceptances here is not a population bound.
+
+[Two Tennis-MoCap BVHs](demo-assets/mocap/README.md) provide optical
+capture-derived joints. Forward kinematics honors channel order and
+parent-transformed offsets, tested with independent noncommuting rotations and
+hierarchies. Two 3,000-frame/100 Hz sequences yield **12,000 valid bilateral
+readings, zero exclusions**. Maximum difference between the application's acos
+formula and independent atan2/cross-product geometry is
+**1.8474111129762605e-12°**. This checks arithmetic, not MediaPipe photo error.
+HP/RP is participant tier, not correctness; paired RGB and Trophy timestamps
+are absent.
+
+The [teaching catalog](demo-assets/README.md) retains all 45 photos, predictions,
+source/model/input hashes, four positive overlays, a current UI tree record,
+BVHs and angle tables. Offline metrics keep missing truth null, exclude
+wrong/unknown arm matches from angle/coach agreement, and count exclusions.
+Coverage, numerical agreement and participant tier cannot become accuracy labels.
 
 ## Verification and Reproduction
 
@@ -87,7 +137,8 @@ and annotations remain in ignored local `archive/optimization-2026-10-11/`.
 bash start.command
 ```
 
-The full suite passed **80 tests, zero skips** on Apple Silicon macOS/Python
+The first quality-guard milestone passed 80 tests. The expanded suite passed
+**112 tests, zero skips** on Apple Silicon macOS/Python
 3.11.14 with the pinned dependencies and official version-1 heavy model.
 Geometry tests include 72 analytically known angle/rotation/scale combinations;
 these validate the formula, not MediaPipe's image accuracy. The model checksum
@@ -99,21 +150,30 @@ including manual selection, conflicting estimates and target-boundary refusal.
 The red interval demo does not supply a poor-technique ground-truth photo.
 The application remains available only at `http://127.0.0.1:8501` while running.
 
+Final focused-UI checks replayed S_030 auto green at 80–120 and manual-right red
+at 110–120, with the same 104.0°/4-of-5 evidence; S_080 refused while identifying
+the displayed crop; S_020 refused in auto and manual-right modes, including
+40–180; unreadable JPEG and unsupported text were rejected without a score.
+The current UI tree and visually inspected positive overlays are saved. Final
+full-page screenshot export timed out; no new full-page visual capture is claimed.
+
 Local evidence: `archive/optimization-2026-10-11/unittest.log`,
 `photo-results-final.json`, `wide-band-guards.json`, `heldout/blind-labels.json`,
 `heldout/manifest.json`, and `output/playwright/`. Historical August screenshots
 remain attributed in `demo-assets/`; they are not current result screenshots.
 
-The additional licensed local assets can be replayed, when present, with:
+Replay the saved teaching inputs with:
 
 ```bash
-.venv/bin/python archive/optimization-2026-10-11/evaluate.py
+.venv/bin/python scripts/evaluate_photos.py --without-focus --output archive/class-baseline
+.venv/bin/python scripts/evaluate_photos.py --output archive/class-focused --save-overlays
+.venv/bin/python scripts/evaluate_mocap.py --report-dir archive/class-mocap
 ```
 
-This ignored evaluation script checks the pre-labelled negative cases and arm
-identity of accepted heldout cases. It writes reports for these explicitly
-licensed evaluation inputs only; it is separate from the in-memory application
-upload path and is not a general private-photo export feature.
+The photo command replays only licensed manifest-listed repository assets. The
+MoCap command verifies its manifest and requires a new report directory. Both
+are separate from the in-memory application upload path. Current results are
+saved in [evaluation-2026-10-11/](demo-assets/evaluation-2026-10-11/README.md).
 
 ## Remaining Accuracy Acceptance
 
@@ -122,10 +182,15 @@ provides independently measured angle labels:
 
 | Source | Current suitability |
 |---|---|
-| [SportsPose](https://christianingwersen.github.io/SportsPose/download.html) | Multi-view sports benchmark, but access requires a request with academic identity and intended use. No external request or account change was made. |
+| [Tennis-MoCap](https://github.com/jdpulgarin/Tennis-MoCap) | CC BY-SA 3.0 optical-motion-derived BVH; two serves saved. Numerical geometry validation is possible, but no paired RGB/correctness labels. |
+| [Taipei / Mendeley](https://data.mendeley.com/datasets/nv3rpsxhhk/1), [primary paper](https://pmc.ncbi.nlm.nih.gov/articles/PMC11282921/) | CC BY 4.0 actual photos and human 2D joints; 29 photos and the original 500-frame serve annotation file saved. These are not measured 3D or coach labels. |
+| [TAGS / Tennis Action-GE, ICCVW 2025](https://openaccess.thecvf.com/content/ICCV2025W/AMFG/html/Wang_Generating_Tennis_Action_Instruction_Based_on_a_Large_Language_Model_ICCVW_2025_paper.html) | 3,000 video/query/evaluation triplets: initial LLM drafts refined by 20 experienced coaches, checked by 10 senior coaches. STCFormer 3D is estimated. No licensed downloadable release located; request serve/Trophy labels and their scope. |
+| [SportsPose](https://christianingwersen.github.io/SportsPose/download.html) | Multi-view sports benchmark; academic identity/email and intended use required. Academic-only, nontransferable terms do not authorize raw classroom redistribution. Request paired references and separate teaching permission. |
 | [University of Bath serve motion capture](https://researchdata.bath.ac.uk/1454/) | CC BY 4.0 marker trajectories are available. The released file list does not include paired RGB frames for running this photo model against the measurements. |
 | [UVA tennis serve dataset](https://github.com/jasnwag/tennis_serve_dataset) | Its documented RTMPose/MotionBERT pipeline estimates 3D from broadcast video; these are model-derived labels, not measured 3D ground truth. |
 | [THETIS](https://github.com/THETIS-dataset/dataset) | Kinect action sequences include beginner/expert players, but the inspected README lists rendered skeleton videos and supplies no dataset reuse license or numerical joint table. Further data/terms review is needed before local photo evaluation. |
+| [VAL tennis dataset](https://val.cs.tut.ac.jp/project/tennis/) | VICON trajectories, including coach participants; noncommercial permission/attribution terms need scope review. Coach participation does not label every pose as correct. |
+| [CalTennis](https://ilonadem.github.io/caltennis-website/) | CC BY-NC 4.0 benchmark; multiview consistency is not directly measured elbow-angle gold, and noncommercial terms need teaching-scope review. No large download was made. |
 
 The photo sets contain no independently measured 3D elbow angles and no
 coach-labelled incorrect Trophy technique. Before a stronger correct/incorrect
@@ -137,3 +202,9 @@ The acceptable errors/coverage must be set with the intended evaluator before
 testing. More heuristics or the same model's repeated outputs cannot supply that
 missing ground truth. No full-serve, injury, deployment or competition acceptance
 claim is made by this local verification.
+
+At the user's request, [research-data access drafts](dataset-access-requests.md)
+are prepared for TAGS and SportsPose. They ask for correct/incorrect Trophy
+rubrics, coach agreement, frame/player/session IDs, paired calibrated references
+and classroom/storage/redistribution rights. **They have not been sent.** No
+academic affiliation, account, budget or grant is assumed.

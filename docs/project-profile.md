@@ -28,7 +28,7 @@ The application uses Python 3.11, Streamlit, and a local MediaPipe Tasks PoseLan
 - No video, backend, account, database, cloud storage, remote AI, camera, or public deployment.
 - Local in-memory processing only; no history or saved results.
 - No medical, injury-prevention, rehabilitation, or professional coaching claim.
-- The 80–120 degree interval is an adjustable demonstration range, not a validated performance target. It was widened from the original 90–105 after measuring elite reference trophy positions at 83–112 degrees and allowing for the roughly ±10 degrees of monocular 3D estimation error.
+- The 80–120 degree interval is an adjustable demonstration range, not a validated performance target. Historical elite-reference model outputs motivated widening the original 90–105 range; these outputs do not establish real angles or a calibrated ±10 degree error bound.
 
 ## Current Verification Boundary
 

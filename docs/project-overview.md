@@ -25,13 +25,14 @@ As a learner, I can upload an authorized Trophy Pose photo in the local web app 
 | FR-07 | Fail safely | Missing image, invalid input, missing landmarks, and invalid geometry never create a score. |
 | FR-08 | Refuse the wrong moment | Both automatic and manual modes require preparation-like dual-arm cues independent of the feedback interval; otherwise return cannot-analyze with a reason. |
 | FR-09 | Report repeat agreement | Five validated, associated passes; at least three survive, full spread <=20 degrees, and all support the same interval category. Show observed bounds, not an accuracy probability. |
+| FR-10 | Improve small-player coverage | A fixed crop independent of angle/target preserves shoulder association, starts a fresh five-pass measurement, and identifies the cropped output. Lost association refuses without using the coarse angle. |
 
 ## Non-Functional Requirements
 
 - Analysis runs locally without an account, database, API key, cloud service, or analysis-time internet dependency after model setup.
 - The complete flow is understandable in a two-minute competition video.
 - Raw photos, landmarks, and results are not persisted after the current analysis session.
-- All visible product copy, source comments, documentation, and repository artifacts use English.
+- Product copy and source comments use English; the classroom guide is provided in Traditional Chinese.
 - The application uses CPU inference and does not require camera input or GPU acceleration.
 
 ## Out of Scope
@@ -53,3 +54,9 @@ As a learner, I can upload an authorized Trophy Pose photo in the local web app 
 8. **Required submission review:** Overlay, limitations, demo script, attribution, and behavior agree.
 
 Research, current photographic checks and the true-angle validation boundary are recorded in [validation.md](validation.md).
+
+The saved [teaching assets](demo-assets/README.md) support local lessons and
+reproduction. Positive coverage improvement on the development sample is
+separate from the requested reliable technique-correctness acceptance. The
+latter still needs independent coach labels and paired measured 3D references;
+[access request drafts](dataset-access-requests.md) are prepared, not sent.
